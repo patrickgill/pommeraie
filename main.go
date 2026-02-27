@@ -17,6 +17,7 @@ import (
 type PlistData map[string]interface{}
 
 var data PlistData
+var itemByUUID map[string]map[string]interface{}
 
 // sanitizeXML strips control characters that are illegal in XML 1.0
 // (anything < 0x20 except tab, newline, carriage return).
@@ -121,21 +122,10 @@ func handleCategoryItems(w http.ResponseWriter, r *http.Request) {
 
 func handleItemDetail(w http.ResponseWriter, r *http.Request) {
 	uuid := r.PathValue("uuid")
-
-	for _, name := range categoryNames(data) {
-		arr := data[name].([]interface{})
-		for _, item := range arr {
-			m, ok := item.(map[string]interface{})
-			if !ok {
-				continue
-			}
-			if strVal(m, "UUID") == uuid {
-				writeJSON(w, m)
-				return
-			}
-		}
+	if m, ok := itemByUUID[uuid]; ok {
+		writeJSON(w, m)
+		return
 	}
-
 	http.Error(w, "item not found", http.StatusNotFound)
 }
 
@@ -262,6 +252,24 @@ func main() {
 				return intVal(mi, "SortDate") > intVal(mj, "SortDate")
 			})
 			data[k] = arr
+		}
+	}
+
+	// Build UUID index for O(1) item lookups
+	itemByUUID = make(map[string]map[string]interface{})
+	for _, v := range data {
+		arr, ok := v.([]interface{})
+		if !ok {
+			continue
+		}
+		for _, item := range arr {
+			m, ok := item.(map[string]interface{})
+			if !ok {
+				continue
+			}
+			if uuid := strVal(m, "UUID"); uuid != "" {
+				itemByUUID[uuid] = m
+			}
 		}
 	}
 
