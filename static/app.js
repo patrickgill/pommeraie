@@ -740,6 +740,27 @@ document.getElementById('menu-btn').addEventListener('click', () => {
 
 document.getElementById('sidebar-overlay').addEventListener('click', closeSidebar);
 
+// --- Keyboard shortcuts ---
+
+document.addEventListener('keydown', (e) => {
+  const search = document.getElementById('search');
+  if (e.key === '/' && document.activeElement !== search) {
+    e.preventDefault();
+    search.focus();
+    openSidebar();
+  }
+  if (e.key === 'Escape' && document.activeElement === search) {
+    search.value = '';
+    search.blur();
+    closeSidebar();
+    if (currentSideboardIndex !== null) {
+      navigate(`#/browse/${slugify(sideboardEntries[currentSideboardIndex].name)}`);
+    } else {
+      navigate('#/');
+    }
+  }
+});
+
 // --- Startup ---
 
 loadSideboard().then(() => handleRoute());
