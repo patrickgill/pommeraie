@@ -1,4 +1,4 @@
-# Orchard
+# Pommeraie
 
 A web-based Apple product database browser. Serves data from Mactracker plist files through a Go backend with a vanilla HTML/CSS/JS frontend.
 
@@ -10,8 +10,8 @@ A web-based Apple product database browser. Serves data from Mactracker plist fi
 ## Quick Start
 
 ```sh
-go build -o orchard
-./orchard
+go build -o pommeraie
+./pommeraie
 ```
 
 Open http://localhost:8080. If no data file is found, you'll be redirected to the upload page.

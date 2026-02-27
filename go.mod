@@ -1,4 +1,4 @@
-module orchard
+module pommeraie
 
 go 1.25.0
 

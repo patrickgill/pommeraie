@@ -1,8 +1,11 @@
 # Binary
-# 
+#
 /build
 orchard
-Mactracker-go
+pommier
+pommeraie
+mactracker-go
+
 
 # temp data
 /!*data*/
@@ -13,7 +16,6 @@ data/
 # macOS
 .DS_Store
 data/.DS_Store
-
 
 # notes
 project.md
