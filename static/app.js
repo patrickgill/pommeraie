@@ -271,6 +271,7 @@ function handleRoute() {
 
   if (parts.length === 0) {
     showView('welcome');
+    document.title = 'Orchard';
     currentSideboardIndex = null;
     document.querySelectorAll('#sidebar-list li').forEach(li => li.classList.remove('active'));
     return;
@@ -399,6 +400,7 @@ async function selectSideboardEntry(index, fromRouter) {
 
   showView('items-view');
   window.scrollTo(0, 0);
+  document.title = `${entry.name} — Orchard`;
   document.getElementById('items-title').textContent = entry.name;
   document.getElementById('items-grid').innerHTML = '';
   document.getElementById('items-status').textContent = '';
@@ -420,6 +422,7 @@ function showFavourites(fromRouter) {
 
   showView('items-view');
   window.scrollTo(0, 0);
+  document.title = 'Favourites — Orchard';
   document.getElementById('items-title').textContent = 'Favourites';
   const grid = document.getElementById('items-grid');
   grid.innerHTML = '';
@@ -507,6 +510,7 @@ async function showDetail(uuid, fromRouter, slug) {
   try { item = await fetchJSON(`/api/items/${uuid}`); } catch { return; }
   if (item.ModelName && item.UUID) {
     itemSlug(item.ModelName, item.UUID);
+    document.title = `${item.ModelName} — Orchard`;
   }
   const content = document.getElementById('detail-content');
 
@@ -606,6 +610,7 @@ document.getElementById('mobile-back').addEventListener('click', () => {
 
 async function performSearch(query, fromRouter) {
   if (!fromRouter) navigate(`#/search/${encodeURIComponent(query)}`);
+  document.title = `Search: ${query} — Orchard`;
   showView('search-results');
   document.getElementById('search-status').textContent = '';
   const searchGrid = document.getElementById('search-grid');
