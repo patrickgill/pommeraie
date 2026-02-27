@@ -116,7 +116,6 @@ func handleCategoryItems(w http.ResponseWriter, r *http.Request) {
 		items = append(items, toItemSummary(m))
 	}
 
-	sortItemsNewestFirst(items)
 	writeJSON(w, items)
 }
 
@@ -154,6 +153,7 @@ func handleSearch(w http.ResponseWriter, r *http.Request) {
 		Category      string `json:"category"`
 		Introduction  string `json:"introduction"`
 		SupportStatus string `json:"supportStatus"`
+		SortDate      int    `json:"sortDate"`
 	}
 
 	var results []SearchResult
@@ -173,10 +173,15 @@ func handleSearch(w http.ResponseWriter, r *http.Request) {
 					Category:      name,
 					Introduction:  strVal(m, "Introduction"),
 					SupportStatus: strVal(m, "SupportStatus"),
+					SortDate:      intVal(m, "SortDate"),
 				})
 			}
 		}
 	}
+
+	sort.Slice(results, func(i, j int) bool {
+		return results[i].SortDate > results[j].SortDate
+	})
 
 	writeJSON(w, results)
 }
@@ -246,6 +251,18 @@ func main() {
 	data, err = loadPlist(*plistPath, keyHex)
 	if err != nil {
 		log.Fatalf("Failed to load plist: %v", err)
+	}
+
+	// Pre-sort each category's items newest-first
+	for k, v := range data {
+		if arr, ok := v.([]interface{}); ok {
+			sort.Slice(arr, func(i, j int) bool {
+				mi, _ := arr[i].(map[string]interface{})
+				mj, _ := arr[j].(map[string]interface{})
+				return intVal(mi, "SortDate") > intVal(mj, "SortDate")
+			})
+			data[k] = arr
+		}
 	}
 
 	cats := categoryNames(data)

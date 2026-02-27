@@ -189,7 +189,11 @@ function toggleFavourite(uuid, summary) {
   }
   localStorage.setItem('favourites', JSON.stringify(favs));
   updateFavBadge();
-  return !!favs[uuid];
+  const added = !!favs[uuid];
+  if (!added && window.location.hash === '#/favourites') {
+    showFavourites(true);
+  }
+  return added;
 }
 
 let favSidebarLi = null;
@@ -601,17 +605,26 @@ async function performSearch(query, fromRouter) {
   if (!fromRouter) navigate(`#/search/${encodeURIComponent(query)}`);
   showView('search-results');
   document.getElementById('search-status').textContent = '';
-  document.getElementById('search-grid').innerHTML = '';
+  const searchGrid = document.getElementById('search-grid');
+  searchGrid.innerHTML = '';
+  searchGrid.style.display = '';
+  searchGrid.classList.remove('no-results');
   const gen = ++searchGen;
   let results;
-  try { results = await fetchJSON(`/api/search?q=${encodeURIComponent(query)}`); } catch { return; }
-  if (gen !== searchGen) return;
-  const grid = document.getElementById('search-grid');
-  if (results.length === 0) {
-    document.getElementById('search-status').textContent = '';
-    grid.innerHTML = `<div class="no-results">No results found for &ldquo;${query}&rdquo;</div>`;
+  try { results = await fetchJSON(`/api/search?q=${encodeURIComponent(query)}`); } catch {
+    document.getElementById('search-status').textContent = `No products found for \u201c${query}\u201d`;
     return;
   }
+  if (gen !== searchGen) return;
+  const grid = document.getElementById('search-grid');
+  if (!results || results.length === 0) {
+    grid.style.display = 'block';
+    grid.textContent = `No products found for \u201c${query}\u201d`;
+    grid.classList.add('no-results');
+    return;
+  }
+  grid.style.display = '';
+  grid.classList.remove('no-results');
   document.getElementById('search-status').textContent = `${results.length} item${results.length !== 1 ? 's' : ''}`;
   for (const item of results) {
     const card = document.createElement('div');
@@ -635,6 +648,9 @@ async function performSearch(query, fromRouter) {
       const nowFav = toggleFavourite(item.uuid, {
         modelName: item.modelName,
         introduction: item.introduction,
+        processor: item.processor || '',
+        purchasePriceUSD: item.purchasePriceUSD || '',
+        tagline: item.tagline || '',
         supportStatus: item.supportStatus,
       });
       btn.textContent = nowFav ? '★' : '☆';

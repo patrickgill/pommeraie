@@ -246,7 +246,7 @@ html, body {
 }
 
 .fav-btn:hover {
-  transform: scale(1.2);
+  color: #ff9500;
 }
 
 .fav-btn.active {
@@ -265,11 +265,16 @@ html, body {
   gap: 12px;
 }
 
+.detail-title-row .fav-btn {
+  font-size: 24px;
+}
+
 .item-card h3 {
   font-size: 15px;
   font-weight: 600;
   margin-bottom: 6px;
   letter-spacing: -0.01em;
+  padding-right: 28px;
 }
 
 .item-card .meta {
@@ -405,6 +410,7 @@ html, body {
 }
 
 .no-results {
+  grid-column: 1 / -1;
   text-align: center;
   color: var(--text-secondary);
   padding: 48px 16px;
