@@ -109,7 +109,7 @@ func handleFilter(w http.ResponseWriter, r *http.Request) {
 			cats[i] = strings.TrimSpace(cats[i])
 		}
 	} else {
-		cats = categoryNames(data)
+		cats = catNames
 	}
 
 	var items []ItemSummary
@@ -163,7 +163,7 @@ func handleModelLookup(w http.ResponseWriter, r *http.Request) {
 	}
 	query := strings.ToUpper(raw)
 
-	for _, catName := range categoryNames(data) {
+	for _, catName := range catNames {
 		arr, ok := data[catName].([]interface{})
 		if !ok {
 			continue

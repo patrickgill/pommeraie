@@ -18,6 +18,7 @@ type PlistData map[string]interface{}
 
 var data PlistData
 var itemByUUID map[string]map[string]interface{}
+var catNames []string
 
 // sanitizeXML strips control characters that are illegal in XML 1.0
 // (anything < 0x20 except tab, newline, carriage return).
@@ -85,7 +86,7 @@ func handleCategories(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var cats []Category
-	for _, name := range categoryNames(data) {
+	for _, name := range catNames {
 		arr := data[name].([]interface{})
 		cats = append(cats, Category{Name: name, Count: len(arr)})
 	}
@@ -147,7 +148,7 @@ func handleSearch(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var results []SearchResult
-	for _, name := range categoryNames(data) {
+	for _, name := range catNames {
 		arr := data[name].([]interface{})
 		for _, item := range arr {
 			m, ok := item.(map[string]interface{})
@@ -273,15 +274,15 @@ func main() {
 		}
 	}
 
-	cats := categoryNames(data)
-	log.Printf("Loaded %d top-level keys, %d categories", len(data), len(cats))
+	catNames = catNames
+	log.Printf("Loaded %d top-level keys, %d categories", len(data), len(catNames))
 	totalItems := 0
-	for _, name := range cats {
+	for _, name := range catNames {
 		arr := data[name].([]interface{})
 		log.Printf("  %-25s %4d items", name, len(arr))
 		totalItems += len(arr)
 	}
-	log.Printf("Total: %d items across %d categories", totalItems, len(cats))
+	log.Printf("Total: %d items across %d categories", totalItems, len(catNames))
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /api/categories", handleCategories)
