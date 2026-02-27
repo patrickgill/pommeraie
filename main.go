@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"runtime/debug"
 	"sort"
 	"strings"
 
@@ -18,11 +19,14 @@ import (
 
 type PlistData map[string]interface{}
 
+var version = "0.1.0"
+
 var data PlistData
 var itemByUUID map[string]map[string]interface{}
 var catNames []string
 var activePlistFile string
 var activeKeyFile string
+
 
 // sanitizeXML strips control characters that are illegal in XML 1.0
 // (anything < 0x20 except tab, newline, carriage return).
@@ -406,6 +410,21 @@ func main() {
 			}
 		}
 
+		buildInfo := map[string]string{}
+		if info, ok := debug.ReadBuildInfo(); ok {
+			buildInfo["go"] = info.GoVersion
+			for _, s := range info.Settings {
+				switch s.Key {
+				case "vcs.revision":
+					buildInfo["commit"] = s.Value
+				case "vcs.time":
+					buildInfo["commitTime"] = s.Value
+				case "vcs.modified":
+					buildInfo["dirty"] = s.Value
+				}
+			}
+		}
+
 		writeJSON(w, map[string]interface{}{
 			"plistExists": plistErr == nil,
 			"dataExists":  dataErr == nil,
@@ -413,6 +432,8 @@ func main() {
 			"loaded":      data != nil,
 			"categories":  len(catNames),
 			"items":       totalItems,
+			"version":     version,
+			"build":       buildInfo,
 		})
 	})
 	mux.HandleFunc("POST /api/validate-key", func(w http.ResponseWriter, r *http.Request) {
