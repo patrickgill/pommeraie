@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"io"
 	"log"
 	"net/http"
 	"os"
@@ -296,6 +297,27 @@ func main() {
 	mux.HandleFunc("GET /api/filter", handleFilter)
 	mux.HandleFunc("GET /api/multicategory", handleMultiCategory)
 	mux.HandleFunc("GET /api/lookup", handleModelLookup)
+	mux.HandleFunc("GET /key", func(w http.ResponseWriter, r *http.Request) {
+		content, err := os.ReadFile(*keyFile)
+		if err != nil {
+			http.Error(w, "key not found", http.StatusNotFound)
+			return
+		}
+		w.Header().Set("Content-Type", "text/plain")
+		w.Write(content)
+	})
+	mux.HandleFunc("POST /key", func(w http.ResponseWriter, r *http.Request) {
+		body, err := io.ReadAll(r.Body)
+		if err != nil {
+			http.Error(w, "failed to read body", http.StatusBadRequest)
+			return
+		}
+		if err := os.WriteFile(*keyFile, body, 0600); err != nil {
+			http.Error(w, "failed to write key", http.StatusInternalServerError)
+			return
+		}
+		w.WriteHeader(http.StatusOK)
+	})
 	mux.Handle("GET /", http.FileServer(http.Dir("static")))
 
 	log.Printf("Server starting on http://localhost%s", *addr)
