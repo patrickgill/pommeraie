@@ -240,22 +240,23 @@ function itemSlug(name, uuid) {
 }
 
 async function resolveSlugAndShow(slug) {
-  let results;
-  try {
-    const query = slug.replace(/-/g, ' ');
-    results = await fetchJSON(`/api/search?q=${encodeURIComponent(query)}`);
-  } catch { showView('welcome'); return; }
-  for (const item of results) {
-    if (slugify(item.modelName) === slug || itemSlug(item.modelName, item.uuid) === slug) {
-      showDetail(item.uuid, true);
-      return;
+  const words = slug.split('-').filter(Boolean);
+  // Try progressively shorter queries until we get results
+  for (let len = words.length; len >= 1; len--) {
+    const query = words.slice(0, len).join(' ');
+    let results;
+    try {
+      results = await fetchJSON(`/api/search?q=${encodeURIComponent(query)}`);
+    } catch { continue; }
+    if (!results || results.length === 0) continue;
+    for (const item of results) {
+      if (slugify(item.modelName) === slug || itemSlug(item.modelName, item.uuid) === slug) {
+        showDetail(item.uuid, true);
+        return;
+      }
     }
   }
-  if (results.length > 0) {
-    showDetail(results[0].uuid, true);
-  } else {
-    showView('welcome');
-  }
+  showView('welcome');
 }
 
 function navigate(hash) {

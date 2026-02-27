@@ -8,6 +8,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"reflect"
 	"sort"
 	"strings"
 
@@ -203,6 +204,12 @@ func intVal(m map[string]interface{}, key string) int {
 }
 
 func writeJSON(w http.ResponseWriter, v interface{}) {
+	// Ensure nil slices encode as [] instead of null
+	if v == nil {
+		v = []interface{}{}
+	} else if rv := reflect.ValueOf(v); rv.Kind() == reflect.Slice && rv.IsNil() {
+		v = []interface{}{}
+	}
 	w.Header().Set("Content-Type", "application/json")
 	enc := json.NewEncoder(w)
 	enc.SetIndent("", "  ")
@@ -274,7 +281,7 @@ func main() {
 		}
 	}
 
-	catNames = catNames
+	catNames = categoryNames(data)
 	log.Printf("Loaded %d top-level keys, %d categories", len(data), len(catNames))
 	totalItems := 0
 	for _, name := range catNames {
