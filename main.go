@@ -27,7 +27,6 @@ var catNames []string
 var activePlistFile string
 var activeKeyFile string
 
-
 // sanitizeXML strips control characters that are illegal in XML 1.0
 // (anything < 0x20 except tab, newline, carriage return).
 func sanitizeXML(b []byte) []byte {
@@ -348,7 +347,7 @@ func handleUpload(w http.ResponseWriter, r *http.Request) {
 func main() {
 	plistPath := flag.String("plist", "", "path to plist file (auto-detects if not set)")
 	keyFile := flag.String("key", "data/key", "path to key file")
-	addr := flag.String("addr", ":8080", "listen address")
+	port := flag.String("port", "8080", "listen port")
 	flag.Parse()
 
 	// Determine plist file path
@@ -513,6 +512,7 @@ func main() {
 		fileServer.ServeHTTP(w, r)
 	})
 
-	log.Printf("Server starting on http://localhost%s", *addr)
-	log.Fatal(http.ListenAndServe(*addr, mux))
+	listenAddr := ":" + *port
+	log.Printf("Server starting on http://localhost:%s", *port)
+	log.Fatal(http.ListenAndServe(listenAddr, mux))
 }

@@ -22,7 +22,7 @@ Open http://localhost:8080. If no data file is found, you'll be redirected to th
 |------|---------|-------------|
 | `-plist` | auto-detect | Path to plist file |
 | `-key` | `data/key` | Path to AES-128 decryption key file |
-| `-addr` | `:8080` | Listen address |
+| `-port` | `8080` | Listen port |
 
 ### Data Files
 
