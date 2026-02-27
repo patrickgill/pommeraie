@@ -171,9 +171,15 @@ let itemSlugToUuid = {};
 let navigating = false;
 
 async function fetchJSON(url) {
-  const res = await fetch(API + url);
-  if (!res.ok) throw new Error(`HTTP ${res.status}`);
-  return res.json();
+  try {
+    const res = await fetch(API + url);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    document.getElementById('connection-error').classList.add('hidden');
+    return res.json();
+  } catch (e) {
+    document.getElementById('connection-error').classList.remove('hidden');
+    throw e;
+  }
 }
 
 // --- Routing ---
@@ -194,8 +200,11 @@ function itemSlug(name, uuid) {
 }
 
 async function resolveSlugAndShow(slug) {
-  const query = slug.replace(/-/g, ' ');
-  const results = await fetchJSON(`/api/search?q=${encodeURIComponent(query)}`);
+  let results;
+  try {
+    const query = slug.replace(/-/g, ' ');
+    results = await fetchJSON(`/api/search?q=${encodeURIComponent(query)}`);
+  } catch { showView('welcome'); return; }
   for (const item of results) {
     if (slugify(item.modelName) === slug || itemSlug(item.modelName, item.uuid) === slug) {
       showDetail(item.uuid, true);
@@ -268,7 +277,8 @@ window.addEventListener('hashchange', () => {
 let sideboardEntries = [];
 
 async function loadSideboard() {
-  const entries = await fetchJSON('/api/sideboard');
+  let entries;
+  try { entries = await fetchJSON('/api/sideboard'); } catch { return; }
   sideboardEntries = entries;
   sideboardSlugToIndex = {};
   for (let i = 0; i < entries.length; i++) {
@@ -332,9 +342,12 @@ async function selectSideboardEntry(index, fromRouter) {
   showView('items-view');
   window.scrollTo(0, 0);
   document.getElementById('items-title').textContent = entry.name;
+  document.getElementById('items-grid').innerHTML = '';
+  document.getElementById('items-status').textContent = '';
 
   const url = sideboardFetchURL(entry);
-  const items = await fetchJSON(url);
+  let items;
+  try { items = await fetchJSON(url); } catch { return; }
   renderItemsGrid(items, document.getElementById('items-grid'));
   document.getElementById('items-status').textContent = `${items.length} item${items.length !== 1 ? 's' : ''}`;
 
@@ -381,7 +394,9 @@ async function showDetail(uuid, fromRouter, slug) {
   }
   showView('detail-view');
   window.scrollTo(0, 0);
-  const item = await fetchJSON(`/api/items/${uuid}`);
+  document.getElementById('detail-content').innerHTML = '';
+  let item;
+  try { item = await fetchJSON(`/api/items/${uuid}`); } catch { return; }
   if (item.ModelName && item.UUID) {
     itemSlug(item.ModelName, item.UUID);
   }
@@ -469,7 +484,8 @@ async function performSearch(query, fromRouter) {
   document.getElementById('search-status').textContent = '';
   document.getElementById('search-grid').innerHTML = '';
   const gen = ++searchGen;
-  const results = await fetchJSON(`/api/search?q=${encodeURIComponent(query)}`);
+  let results;
+  try { results = await fetchJSON(`/api/search?q=${encodeURIComponent(query)}`); } catch { return; }
   if (gen !== searchGen) return;
   const grid = document.getElementById('search-grid');
   if (results.length === 0) {

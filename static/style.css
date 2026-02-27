@@ -170,6 +170,17 @@ html, body {
   display: none !important;
 }
 
+#connection-error {
+  background: #fee2e2;
+  color: #991b1b;
+  text-align: center;
+  padding: 8px 16px;
+  font-size: 13px;
+  font-weight: 500;
+  border-radius: 8px;
+  margin-bottom: 16px;
+}
+
 #welcome {
   display: flex;
   flex-direction: column;
@@ -414,6 +425,7 @@ html.dark .status-badge.vintage { background: #3b2f10; color: #fbbf24; }
 html.dark .status-badge.mixed { background: #2a2a2c; color: #a1a1a6; }
 html.dark .item-card:hover { box-shadow: 0 8px 24px rgba(0,0,0,0.4); }
 html.dark ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); }
+html.dark #connection-error { background: #451a1a; color: #fca5a5; }
 
 /* Mobile header & overlay — hidden on desktop */
 #mobile-header {
@@ -547,7 +559,8 @@ html.dark ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); }
 
 @media print {
   #sidebar, #mobile-header, #sidebar-overlay, #back-btn,
-  #welcome, #items-view, #search-results, #theme-toggle {
+  #welcome, #items-view, #search-results, #theme-toggle,
+  #connection-error {
     display: none !important;
   }
 
