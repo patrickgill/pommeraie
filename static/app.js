@@ -235,8 +235,8 @@ async function selectSideboardEntry(index) {
 
   const url = sideboardFetchURL(entry);
   const items = await fetchJSON(url);
-  document.getElementById('items-count').textContent = `${items.length} products`;
   renderItemsGrid(items, document.getElementById('items-grid'));
+  document.getElementById('items-status').textContent = `${items.length} item${items.length !== 1 ? 's' : ''}`;
 }
 
 function renderItemsGrid(items, container) {
@@ -273,6 +273,7 @@ function renderItemsGrid(items, container) {
 
 async function showDetail(uuid) {
   showView('detail-view');
+  document.getElementById('content').scrollTop = 0;
   const item = await fetchJSON(`/api/items/${uuid}`);
   const content = document.getElementById('detail-content');
 
@@ -353,6 +354,7 @@ document.getElementById('search').addEventListener('input', (e) => {
     showView('search-results');
     const grid = document.getElementById('search-grid');
     grid.innerHTML = '';
+    document.getElementById('search-status').textContent = `${results.length} item${results.length !== 1 ? 's' : ''}`;
     if (results.length === 0) {
       grid.innerHTML = '<p style="color: var(--text-secondary)">No results found.</p>';
       return;

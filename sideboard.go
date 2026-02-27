@@ -184,27 +184,25 @@ func handleModelLookup(w http.ResponseWriter, r *http.Request) {
 }
 
 func modelMatches(m map[string]interface{}, query string) bool {
-	// 1. MachID exact match (e.g. "MAC16,8" == "Mac16,8")
+	// 1. MachID substring match (e.g. "Mac16,8" within "Mac16,8 (M4 Pro) Mac16,6 (M4 Max)")
 	if machID := strVal(m, "MachID"); machID != "" {
-		if strings.EqualFold(machID, query) {
+		if strings.Contains(strings.ToUpper(machID), strings.ToUpper(query)) {
 			return true
 		}
 	}
 
-	// 2. FamilyNumber token match (e.g. "A3401")
-	if fieldTokenMatch(strVal(m, "FamilyNumber"), query) {
-		return true
+	// 2. FamilyNumber substring match (e.g. "A3401")
+	if familyNum := strVal(m, "FamilyNumber"); familyNum != "" {
+		if strings.Contains(strings.ToUpper(familyNum), strings.ToUpper(query)) {
+			return true
+		}
 	}
 
-	// 3. OrderNumber token match — try both exact and stripped
-	if fieldTokenMatch(strVal(m, "OrderNumber"), query) {
-		return true
-	}
-
-	// 4. Try with suffix stripped (MX2E3LL/A → MX2E3)
-	stripped := stripOrderSuffix(query)
-	if stripped != query && fieldTokenMatchStripped(strVal(m, "OrderNumber"), stripped) {
-		return true
+	// 3. OrderNumber substring match
+	if orderNum := strVal(m, "OrderNumber"); orderNum != "" {
+		if strings.Contains(strings.ToUpper(orderNum), strings.ToUpper(query)) {
+			return true
+		}
 	}
 
 	return false

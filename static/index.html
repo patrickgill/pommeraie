@@ -3,14 +3,14 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Mactracker</title>
+  <title>Orchard</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
   <div id="app">
     <nav id="sidebar">
       <div class="sidebar-header">
-        <h1>Mactracker</h1>
+        <h1>Orchard</h1>
         <input type="search" id="search" placeholder="Search products..." autocomplete="off">
       </div>
       <ul id="sidebar-list"></ul>
@@ -23,9 +23,9 @@
       <div id="items-view" class="hidden">
         <div class="items-header">
           <h2 id="items-title"></h2>
-          <span id="items-count"></span>
         </div>
         <div id="items-grid"></div>
+        <div class="status-bar" id="items-status"></div>
       </div>
       <div id="detail-view" class="hidden">
         <button id="back-btn">&larr; Back</button>
@@ -34,6 +34,7 @@
       <div id="search-results" class="hidden">
         <h2>Search Results</h2>
         <div id="search-grid"></div>
+        <div class="status-bar" id="search-status"></div>
       </div>
     </main>
   </div>

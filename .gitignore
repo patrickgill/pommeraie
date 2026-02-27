@@ -1,8 +1,13 @@
 # Binary
-mactracker-go
+orchard
+Mactracker-go
 
 # Data files
 data/
 
 # macOS
 .DS_Store
+data/.DS_Store
+
+# 
+/build

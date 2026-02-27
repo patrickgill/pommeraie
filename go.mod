@@ -1,4 +1,4 @@
-module mactracker-go
+module orchard
 
 go 1.25.0
 
