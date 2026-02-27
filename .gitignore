@@ -4,6 +4,9 @@
 orchard
 Mactracker-go
 
+# temp data
+/!*data*/
+
 # Data files
 data/
 
