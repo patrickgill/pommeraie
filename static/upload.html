@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Import Data — Orchard</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", sans-serif;
+      background: #f5f5f7;
+      color: #1d1d1f;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 20px;
+    }
+    .container {
+      background: #fff;
+      border-radius: 16px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+      padding: 48px;
+      max-width: 520px;
+      width: 100%;
+      text-align: center;
+    }
+    h1 {
+      font-size: 24px;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+    .subtitle {
+      font-size: 14px;
+      color: #86868b;
+      margin-bottom: 32px;
+    }
+    .upload-section {
+      margin-bottom: 24px;
+      padding: 24px;
+      border: 2px dashed #d2d2d7;
+      border-radius: 12px;
+      transition: border-color 0.2s;
+    }
+    .upload-section:hover { border-color: #0071e3; }
+    .upload-section.dragover {
+      border-color: #0071e3;
+      background: #f0f7ff;
+    }
+    .upload-section h2 {
+      font-size: 16px;
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+    .upload-section p {
+      font-size: 13px;
+      color: #86868b;
+      margin-bottom: 16px;
+    }
+    .upload-section.disabled {
+      opacity: 0.5;
+      pointer-events: none;
+    }
+    .unsupported-msg {
+      font-size: 12px;
+      color: #ff3b30;
+      margin-top: 8px;
+    }
+    button {
+      font-family: inherit;
+      font-size: 14px;
+      font-weight: 500;
+      padding: 10px 24px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      background: #0071e3;
+      color: #fff;
+      transition: background 0.2s;
+    }
+    button:hover { background: #0077ed; }
+    button:disabled { background: #d2d2d7; cursor: default; }
+    button.secondary {
+      background: #e8e8ed;
+      color: #1d1d1f;
+    }
+    button.secondary:hover { background: #d2d2d7; }
+    button.secondary:disabled { background: #e8e8ed; color: #86868b; cursor: default; }
+    input[type="file"] { display: none; }
+    .key-row {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+    .key-row input[type="text"] {
+      flex: 1;
+      font-family: "SF Mono", SFMono-Regular, Menlo, monospace;
+      font-size: 13px;
+      padding: 8px 12px;
+      border: 1px solid #d2d2d7;
+      border-radius: 8px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .key-row input[type="text"]:focus { border-color: #0071e3; }
+    #key-status {
+      font-size: 13px;
+      margin-top: 8px;
+      min-height: 18px;
+    }
+    #key-status.error { color: #ff3b30; }
+    #key-status.success { color: #34c759; }
+    .divider {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 24px;
+      color: #86868b;
+      font-size: 13px;
+    }
+    .divider::before, .divider::after {
+      content: "";
+      flex: 1;
+      border-top: 1px solid #d2d2d7;
+    }
+    #status {
+      margin-top: 24px;
+      font-size: 14px;
+      min-height: 20px;
+    }
+    #status.error { color: #ff3b30; }
+    #status.success { color: #34c759; }
+    #status.info { color: #ff9f0a; }
+    #status.uploading { color: #0071e3; }
+    .back-link {
+      display: inline-block;
+      margin-top: 24px;
+      font-size: 14px;
+      color: #0071e3;
+      text-decoration: none;
+    }
+    .back-link:hover { text-decoration: underline; }
+    #file-status {
+      margin-bottom: 24px;
+      text-align: left;
+      font-size: 13px;
+    }
+    .file-status-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 0;
+    }
+    .file-status-row .indicator {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .file-status-row .indicator.found { background: #34c759; }
+    .file-status-row .indicator.needed { background: #ff9f0a; }
+    .file-status-row .indicator.missing { background: #ff3b30; }
+    .file-status-row .label { color: #1d1d1f; }
+    .file-status-row .detail {
+      margin-left: auto;
+      color: #86868b;
+      font-size: 12px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Import Data</h1>
+    <p class="subtitle">Update the product database from a Mactracker .app bundle or a CoreCollection file.</p>
+
+    <div id="file-status"></div>
+
+    <div class="upload-section" id="app-section">
+      <h2>Import from .app</h2>
+      <p>Drop a .app folder here, or click to choose one. CoreCollection is extracted automatically.</p>
+      <button id="app-btn">Choose .app Folder</button>
+      <input type="file" id="app-input" webkitdirectory>
+    </div>
+
+    <div class="divider">or</div>
+
+    <div class="upload-section">
+      <h2>Upload CoreCollection File</h2>
+      <p>Drop a file here, or click to choose a CoreCollection.data or CoreCollection.plist file.</p>
+      <button id="file-btn">Choose File</button>
+      <input type="file" id="file-input" accept=".data,.plist">
+    </div>
+
+    <div id="status"></div>
+
+    <div class="divider"></div>
+
+    <div class="upload-section" id="key-section">
+      <h2>Decryption Key</h2>
+      <p>AES-128 hex key used to decrypt encrypted CoreCollection files.</p>
+      <div class="key-row">
+        <input type="text" id="key-input" placeholder="Loading..." spellcheck="false" autocomplete="off">
+        <button id="key-btn" disabled>Save</button>
+      </div>
+      <div id="key-status"></div>
+      <button id="key-validate-btn" class="secondary" style="margin-top: 12px;">Validate Key Against Data File</button>
+    </div>
+
+    <a href="/" class="back-link">Back to Orchard</a>
+  </div>
+
+  <script src="upload.js"></script>
+</body>
+</html>

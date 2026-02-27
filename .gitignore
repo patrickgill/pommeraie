@@ -1,4 +1,6 @@
 # Binary
+# 
+/build
 orchard
 Mactracker-go
 
@@ -9,5 +11,6 @@ data/
 .DS_Store
 data/.DS_Store
 
-# 
-/build
+
+# notes
+project.md

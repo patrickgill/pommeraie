@@ -9,6 +9,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"path/filepath"
 	"sort"
 	"strings"
 
@@ -20,6 +21,8 @@ type PlistData map[string]interface{}
 var data PlistData
 var itemByUUID map[string]map[string]interface{}
 var catNames []string
+var activePlistFile string
+var activeKeyFile string
 
 // sanitizeXML strips control characters that are illegal in XML 1.0
 // (anything < 0x20 except tab, newline, carriage return).
@@ -207,62 +210,44 @@ func writeJSON(w http.ResponseWriter, v interface{}) {
 	}
 }
 
-func main() {
-	plistPath := flag.String("plist", "", "path to plist file (auto-detects if not set)")
-	keyFile := flag.String("key", "data/key", "path to key file")
-	addr := flag.String("addr", ":8080", "listen address")
-	flag.Parse()
-
-	// Determine plist file path
-	plistFile := *plistPath
-	if plistFile == "" {
-		if _, err := os.Stat("data/CoreCollection.plist"); err == nil {
-			plistFile = "data/CoreCollection.plist"
-		} else if _, err := os.Stat("data/CoreCollection.data"); err == nil {
-			plistFile = "data/CoreCollection.data"
-		} else {
-			log.Fatal("No plist file found (tried data/CoreCollection.plist and data/CoreCollection.data)")
-		}
-	}
-
-	// Read file and detect if encrypted
-	raw, err := os.ReadFile(plistFile)
+func reloadData() error {
+	raw, err := os.ReadFile(activePlistFile)
 	if err != nil {
-		log.Fatalf("Failed to read %s: %v", plistFile, err)
+		return fmt.Errorf("read %s: %w", activePlistFile, err)
 	}
 
 	var keyHex string
 	if validatePlist(raw) == nil {
-		log.Printf("Loading plaintext plist from %s", plistFile)
+		log.Printf("Loading plaintext plist from %s", activePlistFile)
 	} else {
-		keyBytes, err := os.ReadFile(*keyFile)
+		keyBytes, err := os.ReadFile(activeKeyFile)
 		if err != nil {
-			log.Fatalf("Data file %s appears encrypted but no key found at %s", plistFile, *keyFile)
+			return fmt.Errorf("data file %s appears encrypted but no key found at %s", activePlistFile, activeKeyFile)
 		}
 		keyHex = strings.TrimSpace(string(keyBytes))
-		log.Printf("Loading encrypted plist from %s (key from %s)", plistFile, *keyFile)
+		log.Printf("Loading encrypted plist from %s (key from %s)", activePlistFile, activeKeyFile)
 	}
 
-	data, err = loadPlist(raw, keyHex)
+	newData, err := loadPlist(raw, keyHex)
 	if err != nil {
-		log.Fatalf("Failed to load plist: %v", err)
+		return fmt.Errorf("load plist: %w", err)
 	}
 
 	// Pre-sort each category's items newest-first
-	for k, v := range data {
+	for k, v := range newData {
 		if arr, ok := v.([]interface{}); ok {
 			sort.Slice(arr, func(i, j int) bool {
 				mi, _ := arr[i].(map[string]interface{})
 				mj, _ := arr[j].(map[string]interface{})
 				return intVal(mi, "SortDate") > intVal(mj, "SortDate")
 			})
-			data[k] = arr
+			newData[k] = arr
 		}
 	}
 
 	// Build UUID index for O(1) item lookups
-	itemByUUID = make(map[string]map[string]interface{})
-	for _, v := range data {
+	newIndex := make(map[string]map[string]interface{})
+	for _, v := range newData {
 		arr, ok := v.([]interface{})
 		if !ok {
 			continue
@@ -273,12 +258,15 @@ func main() {
 				continue
 			}
 			if uuid := strVal(m, "UUID"); uuid != "" {
-				itemByUUID[uuid] = m
+				newIndex[uuid] = m
 			}
 		}
 	}
 
+	data = newData
+	itemByUUID = newIndex
 	catNames = categoryNames(data)
+
 	log.Printf("Loaded %d top-level keys, %d categories", len(data), len(catNames))
 	totalItems := 0
 	for _, name := range catNames {
@@ -287,6 +275,96 @@ func main() {
 		totalItems += len(arr)
 	}
 	log.Printf("Total: %d items across %d categories", totalItems, len(catNames))
+	return nil
+}
+
+func handleUpload(w http.ResponseWriter, r *http.Request) {
+	r.Body = http.MaxBytesReader(w, r.Body, 256<<20) // 256 MB limit
+
+	file, header, err := r.FormFile("file")
+	if err != nil {
+		http.Error(w, "failed to read upload: "+err.Error(), http.StatusBadRequest)
+		return
+	}
+	defer file.Close()
+
+	fileData, err := io.ReadAll(file)
+	if err != nil {
+		http.Error(w, "failed to read file data: "+err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	// Determine save path based on uploaded filename extension
+	ext := filepath.Ext(header.Filename)
+	savePath := "data/CoreCollection.data"
+	if ext == ".plist" {
+		savePath = "data/CoreCollection.plist"
+	}
+
+	if err := os.MkdirAll("data", 0755); err != nil {
+		http.Error(w, "failed to create data directory: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	if err := os.WriteFile(savePath, fileData, 0644); err != nil {
+		http.Error(w, "failed to save file: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	activePlistFile = savePath
+	log.Printf("Uploaded %s (%d bytes), saved to %s", header.Filename, len(fileData), savePath)
+
+	reloadErr := reloadData()
+
+	totalItems := 0
+	if data != nil {
+		for _, name := range catNames {
+			arr := data[name].([]interface{})
+			totalItems += len(arr)
+		}
+	}
+
+	result := map[string]interface{}{
+		"ok":         true,
+		"categories": len(catNames),
+		"items":      totalItems,
+		"savedTo":    savePath,
+	}
+
+	if reloadErr != nil {
+		result["loaded"] = false
+		result["info"] = reloadErr.Error()
+	} else {
+		result["loaded"] = true
+	}
+
+	writeJSON(w, result)
+}
+
+func main() {
+	plistPath := flag.String("plist", "", "path to plist file (auto-detects if not set)")
+	keyFile := flag.String("key", "data/key", "path to key file")
+	addr := flag.String("addr", ":8080", "listen address")
+	flag.Parse()
+
+	// Determine plist file path
+	activePlistFile = *plistPath
+	if activePlistFile == "" {
+		if _, err := os.Stat("data/CoreCollection.plist"); err == nil {
+			activePlistFile = "data/CoreCollection.plist"
+		} else if _, err := os.Stat("data/CoreCollection.data"); err == nil {
+			activePlistFile = "data/CoreCollection.data"
+		} else {
+			log.Printf("No plist file found — upload one at /upload.html")
+		}
+	}
+	activeKeyFile = *keyFile
+
+	if activePlistFile != "" {
+		if err := reloadData(); err != nil {
+			log.Printf("Could not load data: %v — upload key or data at /upload.html", err)
+		}
+	}
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /api/categories", handleCategories)
@@ -297,8 +375,79 @@ func main() {
 	mux.HandleFunc("GET /api/filter", handleFilter)
 	mux.HandleFunc("GET /api/multicategory", handleMultiCategory)
 	mux.HandleFunc("GET /api/lookup", handleModelLookup)
+	mux.HandleFunc("POST /api/upload", handleUpload)
+	mux.HandleFunc("POST /api/reload", func(w http.ResponseWriter, r *http.Request) {
+		if activePlistFile == "" {
+			writeJSON(w, map[string]interface{}{"ok": false, "message": "No data file configured"})
+			return
+		}
+		err := reloadData()
+		if err != nil {
+			writeJSON(w, map[string]interface{}{"ok": false, "message": err.Error()})
+			return
+		}
+		totalItems := 0
+		for _, name := range catNames {
+			arr := data[name].([]interface{})
+			totalItems += len(arr)
+		}
+		writeJSON(w, map[string]interface{}{"ok": true, "categories": len(catNames), "items": totalItems})
+	})
+	mux.HandleFunc("GET /api/status", func(w http.ResponseWriter, r *http.Request) {
+		_, plistErr := os.Stat("data/CoreCollection.plist")
+		_, dataErr := os.Stat("data/CoreCollection.data")
+		_, keyErr := os.Stat(activeKeyFile)
+
+		totalItems := 0
+		if data != nil {
+			for _, name := range catNames {
+				arr := data[name].([]interface{})
+				totalItems += len(arr)
+			}
+		}
+
+		writeJSON(w, map[string]interface{}{
+			"plistExists": plistErr == nil,
+			"dataExists":  dataErr == nil,
+			"keyExists":   keyErr == nil,
+			"loaded":      data != nil,
+			"categories":  len(catNames),
+			"items":       totalItems,
+		})
+	})
+	mux.HandleFunc("POST /api/validate-key", func(w http.ResponseWriter, r *http.Request) {
+		keyHex := strings.TrimSpace(r.URL.Query().Get("key"))
+		if keyHex == "" {
+			body, _ := io.ReadAll(r.Body)
+			keyHex = strings.TrimSpace(string(body))
+		}
+
+		raw, err := os.ReadFile(activePlistFile)
+		if err != nil {
+			writeJSON(w, map[string]interface{}{"valid": false, "message": "No data file found: " + err.Error()})
+			return
+		}
+
+		if validatePlist(raw) == nil {
+			writeJSON(w, map[string]interface{}{"valid": true, "message": "Data file is plaintext XML — no key needed."})
+			return
+		}
+
+		if keyHex == "" {
+			writeJSON(w, map[string]interface{}{"valid": false, "message": "Data file is encrypted but no key provided."})
+			return
+		}
+
+		_, err = decryptData(raw, keyHex)
+		if err != nil {
+			writeJSON(w, map[string]interface{}{"valid": false, "message": err.Error()})
+			return
+		}
+
+		writeJSON(w, map[string]interface{}{"valid": true, "message": "Key is valid — decrypts to valid XML plist."})
+	})
 	mux.HandleFunc("GET /key", func(w http.ResponseWriter, r *http.Request) {
-		content, err := os.ReadFile(*keyFile)
+		content, err := os.ReadFile(activeKeyFile)
 		if err != nil {
 			http.Error(w, "key not found", http.StatusNotFound)
 			return
@@ -312,13 +461,36 @@ func main() {
 			http.Error(w, "failed to read body", http.StatusBadRequest)
 			return
 		}
-		if err := os.WriteFile(*keyFile, body, 0600); err != nil {
+		if err := os.WriteFile(activeKeyFile, body, 0600); err != nil {
 			http.Error(w, "failed to write key", http.StatusInternalServerError)
 			return
 		}
 		w.WriteHeader(http.StatusOK)
 	})
-	mux.Handle("GET /", http.FileServer(http.Dir("static")))
+	mux.HandleFunc("GET /upload", func(w http.ResponseWriter, r *http.Request) {
+		http.ServeFile(w, r, "static/upload.html")
+	})
+	fileServer := http.FileServer(http.Dir("static"))
+	mux.HandleFunc("GET /", func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/" && data == nil {
+			// Try to auto-detect and reload before redirecting
+			if activePlistFile == "" {
+				if _, err := os.Stat("data/CoreCollection.plist"); err == nil {
+					activePlistFile = "data/CoreCollection.plist"
+				} else if _, err := os.Stat("data/CoreCollection.data"); err == nil {
+					activePlistFile = "data/CoreCollection.data"
+				}
+			}
+			if activePlistFile != "" {
+				reloadData()
+			}
+			if data == nil {
+				http.Redirect(w, r, "/upload", http.StatusTemporaryRedirect)
+				return
+			}
+		}
+		fileServer.ServeHTTP(w, r)
+	})
 
 	log.Printf("Server starting on http://localhost%s", *addr)
 	log.Fatal(http.ListenAndServe(*addr, mux))
