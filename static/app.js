@@ -170,6 +170,40 @@ let searchGen = 0;
 let itemSlugToUuid = {};
 let navigating = false;
 
+// --- Favourites ---
+
+function getFavourites() {
+  try { return JSON.parse(localStorage.getItem('favourites')) || {}; } catch { return {}; }
+}
+
+function isFavourite(uuid) {
+  return uuid in getFavourites();
+}
+
+function toggleFavourite(uuid, summary) {
+  const favs = getFavourites();
+  if (favs[uuid]) {
+    delete favs[uuid];
+  } else {
+    favs[uuid] = summary;
+  }
+  localStorage.setItem('favourites', JSON.stringify(favs));
+  updateFavBadge();
+  return !!favs[uuid];
+}
+
+let favSidebarLi = null;
+
+function updateFavBadge() {
+  if (!favSidebarLi) return;
+  const count = Object.keys(getFavourites()).length;
+  const badge = favSidebarLi.querySelector('.count');
+  if (badge) {
+    badge.textContent = count;
+  }
+  favSidebarLi.classList.toggle('hidden', count === 0);
+}
+
 async function fetchJSON(url) {
   try {
     const res = await fetch(API + url);
@@ -232,6 +266,11 @@ function handleRoute() {
     showView('welcome');
     currentSideboardIndex = null;
     document.querySelectorAll('#sidebar-list li').forEach(li => li.classList.remove('active'));
+    return;
+  }
+
+  if (parts[0] === 'favourites') {
+    showFavourites(true);
     return;
   }
 
@@ -306,6 +345,18 @@ async function loadSideboard() {
     li.addEventListener('click', () => selectSideboardEntry(i));
     list.appendChild(li);
   }
+
+  // Insert Favourites entry above everything
+  favSidebarLi = document.createElement('li');
+  favSidebarLi.dataset.favourites = 'true';
+  const favCount = Object.keys(getFavourites()).length;
+  favSidebarLi.innerHTML = `<span>★ Favourites</span><span class="count">${favCount}</span>`;
+  favSidebarLi.addEventListener('click', () => {
+    navigate('#/favourites');
+    closeSidebar();
+  });
+  favSidebarLi.classList.toggle('hidden', favCount === 0);
+  list.prepend(favSidebarLi);
 }
 
 function sideboardFetchURL(entry) {
@@ -354,6 +405,40 @@ async function selectSideboardEntry(index, fromRouter) {
   closeSidebar();
 }
 
+function showFavourites(fromRouter) {
+  if (!fromRouter) navigate('#/favourites');
+  document.querySelectorAll('#sidebar-list li').forEach(li => li.classList.remove('active'));
+  if (favSidebarLi) favSidebarLi.classList.add('active');
+  currentSideboardIndex = null;
+
+  showView('items-view');
+  window.scrollTo(0, 0);
+  document.getElementById('items-title').textContent = 'Favourites';
+  const grid = document.getElementById('items-grid');
+  grid.innerHTML = '';
+  document.getElementById('items-status').textContent = '';
+
+  const favs = getFavourites();
+  const items = Object.entries(favs).map(([uuid, s]) => ({
+    uuid,
+    modelName: s.modelName,
+    introduction: s.introduction,
+    processor: s.processor,
+    purchasePriceUSD: s.purchasePriceUSD,
+    tagline: s.tagline,
+    supportStatus: s.supportStatus,
+  }));
+
+  if (items.length === 0) {
+    grid.innerHTML = '<div class="no-results">No favourites yet. Browse products and tap ★ to save them here.</div>';
+    return;
+  }
+
+  renderItemsGrid(items, grid);
+  document.getElementById('items-status').textContent = `${items.length} item${items.length !== 1 ? 's' : ''}`;
+  closeSidebar();
+}
+
 function renderItemsGrid(items, container) {
   container.innerHTML = '';
   for (const item of items) {
@@ -377,12 +462,28 @@ function renderItemsGrid(items, container) {
       tagline = `<div class="tagline">${item.tagline}</div>`;
     }
 
+    const fav = isFavourite(item.uuid);
     card.innerHTML = `
+      <button class="fav-btn${fav ? ' active' : ''}" aria-label="Toggle favourite">${fav ? '★' : '☆'}</button>
       <h3>${item.modelName || 'Unknown'}</h3>
       <div class="meta">${meta}</div>
       ${tagline}
       ${badge}
     `;
+    card.querySelector('.fav-btn').addEventListener('click', (e) => {
+      e.stopPropagation();
+      const btn = e.currentTarget;
+      const nowFav = toggleFavourite(item.uuid, {
+        modelName: item.modelName,
+        introduction: item.introduction,
+        processor: item.processor,
+        purchasePriceUSD: item.purchasePriceUSD,
+        tagline: item.tagline,
+        supportStatus: item.supportStatus,
+      });
+      btn.textContent = nowFav ? '★' : '☆';
+      btn.classList.toggle('active', nowFav);
+    });
     container.appendChild(card);
   }
 }
@@ -408,9 +509,13 @@ async function showDetail(uuid, fromRouter, slug) {
     badge = `<span class="status-badge ${statusClass(item.SupportStatus)}">${item.SupportStatus}</span>`;
   }
 
+  const fav = isFavourite(item.UUID);
   let html = `
     <div class="detail-header">
-      <h2>${item.ModelName || 'Unknown'}</h2>
+      <div class="detail-title-row">
+        <h2>${item.ModelName || 'Unknown'}</h2>
+        <button class="fav-btn${fav ? ' active' : ''}" aria-label="Toggle favourite">${fav ? '★' : '☆'}</button>
+      </div>
       ${tagline}
       ${badge}
     </div>
@@ -445,6 +550,20 @@ async function showDetail(uuid, fromRouter, slug) {
 
   html += '</div>';
   content.innerHTML = html;
+
+  content.querySelector('.fav-btn').addEventListener('click', (e) => {
+    const btn = e.currentTarget;
+    const nowFav = toggleFavourite(item.UUID, {
+      modelName: item.ModelName,
+      introduction: item.Introduction,
+      processor: item.Processor,
+      purchasePriceUSD: item.PurchasePriceUSD,
+      tagline: item.Tagline,
+      supportStatus: item.SupportStatus,
+    });
+    btn.textContent = nowFav ? '★' : '☆';
+    btn.classList.toggle('active', nowFav);
+  });
 }
 
 function showView(id) {
@@ -502,12 +621,25 @@ async function performSearch(query, fromRouter) {
       currentCategory = item.category;
       showDetail(item.uuid, false, slug);
     });
+    const fav = isFavourite(item.uuid);
     card.innerHTML = `
+      <button class="fav-btn${fav ? ' active' : ''}" aria-label="Toggle favourite">${fav ? '★' : '☆'}</button>
       <span class="search-category">${formatCategoryName(item.category)}</span>
       <h3>${item.modelName}</h3>
       <div class="meta">${item.introduction || ''}</div>
       ${item.supportStatus ? `<span class="status-badge ${statusClass(item.supportStatus)}">${item.supportStatus}</span>` : ''}
     `;
+    card.querySelector('.fav-btn').addEventListener('click', (e) => {
+      e.stopPropagation();
+      const btn = e.currentTarget;
+      const nowFav = toggleFavourite(item.uuid, {
+        modelName: item.modelName,
+        introduction: item.introduction,
+        supportStatus: item.supportStatus,
+      });
+      btn.textContent = nowFav ? '★' : '☆';
+      btn.classList.toggle('active', nowFav);
+    });
     grid.appendChild(card);
   }
 }

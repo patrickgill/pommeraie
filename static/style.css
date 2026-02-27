@@ -225,11 +225,44 @@ html, body {
   cursor: pointer;
   transition: transform 0.2s, box-shadow 0.2s;
   border: 1px solid var(--border);
+  position: relative;
 }
 
 .item-card:hover {
   transform: translateY(-2px);
   box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+}
+
+/* Favourite button */
+.fav-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 18px;
+  color: var(--text-secondary);
+  padding: 2px;
+  line-height: 1;
+  transition: color 0.15s, transform 0.15s;
+}
+
+.fav-btn:hover {
+  transform: scale(1.2);
+}
+
+.fav-btn.active {
+  color: #ff9500;
+}
+
+.item-card .fav-btn {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+}
+
+.detail-title-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
 
 .item-card h3 {
