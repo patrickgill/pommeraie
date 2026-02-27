@@ -535,3 +535,49 @@ html.dark ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); }
   }
 }
 
+@media print {
+  #sidebar, #mobile-header, #sidebar-overlay, #back-btn,
+  #welcome, #items-view, #search-results, #theme-toggle {
+    display: none !important;
+  }
+
+  #content {
+    margin-left: 0;
+    padding: 0;
+  }
+
+  #detail-view {
+    display: block !important;
+  }
+
+  #detail-content {
+    border: none;
+    border-radius: 0;
+  }
+
+  .detail-header {
+    padding: 0 0 12px;
+  }
+
+  .spec-group {
+    padding: 12px 0;
+    break-inside: avoid;
+  }
+
+  .spec-row {
+    font-size: 11px;
+    padding: 3px 0;
+  }
+
+  .spec-label {
+    width: 160px;
+    min-width: 160px;
+  }
+
+  .status-badge {
+    border: 1px solid currentColor;
+  }
+
+  a { color: inherit; }
+}
+
