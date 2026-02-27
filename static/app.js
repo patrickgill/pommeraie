@@ -172,24 +172,26 @@ let navigating = false;
 
 // --- Favourites ---
 
+let favsCache;
+try { favsCache = JSON.parse(localStorage.getItem('favourites')) || {}; } catch { favsCache = {}; }
+
 function getFavourites() {
-  try { return JSON.parse(localStorage.getItem('favourites')) || {}; } catch { return {}; }
+  return favsCache;
 }
 
 function isFavourite(uuid) {
-  return uuid in getFavourites();
+  return uuid in favsCache;
 }
 
 function toggleFavourite(uuid, summary) {
-  const favs = getFavourites();
-  if (favs[uuid]) {
-    delete favs[uuid];
+  if (favsCache[uuid]) {
+    delete favsCache[uuid];
   } else {
-    favs[uuid] = summary;
+    favsCache[uuid] = summary;
   }
-  localStorage.setItem('favourites', JSON.stringify(favs));
+  localStorage.setItem('favourites', JSON.stringify(favsCache));
   updateFavBadge();
-  const added = !!favs[uuid];
+  const added = !!favsCache[uuid];
   if (!added && window.location.hash === '#/favourites') {
     showFavourites(true);
   }
@@ -200,7 +202,7 @@ let favSidebarLi = null;
 
 function updateFavBadge() {
   if (!favSidebarLi) return;
-  const count = Object.keys(getFavourites()).length;
+  const count = Object.keys(favsCache).length;
   const badge = favSidebarLi.querySelector('.count');
   if (badge) {
     badge.textContent = count;
