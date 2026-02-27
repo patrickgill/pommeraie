@@ -42,14 +42,9 @@ func sanitizeXML(b []byte) []byte {
 	return out
 }
 
-func loadPlist(path string, keyHex string) (PlistData, error) {
-	raw, err := os.ReadFile(path)
-	if err != nil {
-		return nil, fmt.Errorf("read plist: %w", err)
-	}
-	log.Printf("Read %d bytes from %s", len(raw), path)
-
+func loadPlist(raw []byte, keyHex string) (PlistData, error) {
 	if keyHex != "" {
+		var err error
 		raw, err = decryptData(raw, keyHex)
 		if err != nil {
 			return nil, err
@@ -254,7 +249,7 @@ func main() {
 		log.Printf("Loading encrypted plist from %s (key from %s)", plistFile, *keyFile)
 	}
 
-	data, err = loadPlist(plistFile, keyHex)
+	data, err = loadPlist(raw, keyHex)
 	if err != nil {
 		log.Fatalf("Failed to load plist: %v", err)
 	}
