@@ -248,6 +248,18 @@ func reloadData() error {
 		}
 	}
 
+	// Extract color lookup table and resolve ColorValue UUIDs in items
+	colorLookup := make(map[string]map[string]interface{})
+	if md, ok := newData["MactrackerData"].(map[string]interface{}); ok {
+		if cd, ok := md["ColorDetails"].(map[string]interface{}); ok {
+			for uuid, v := range cd {
+				if detail, ok := v.(map[string]interface{}); ok {
+					colorLookup[uuid] = detail
+				}
+			}
+		}
+	}
+
 	// Build UUID index for O(1) item lookups
 	newIndex := make(map[string]map[string]interface{})
 	for _, v := range newData {
@@ -262,6 +274,23 @@ func reloadData() error {
 			}
 			if uuid := strVal(m, "UUID"); uuid != "" {
 				newIndex[uuid] = m
+			}
+			// Resolve ColorValue UUIDs to {name, hex} objects
+			if cvArr, ok := m["ColorValue"].([]interface{}); ok && len(colorLookup) > 0 {
+				resolved := make([]interface{}, 0, len(cvArr))
+				for _, cv := range cvArr {
+					uid, ok := cv.(string)
+					if !ok {
+						continue
+					}
+					if detail, found := colorLookup[uid]; found {
+						resolved = append(resolved, map[string]interface{}{
+							"name": strVal(detail, "Name"),
+							"hex":  strVal(detail, "Value"),
+						})
+					}
+				}
+				m["ColorValue"] = resolved
 			}
 		}
 	}
@@ -348,6 +377,7 @@ func main() {
 	plistPath := flag.String("plist", "", "path to plist file (auto-detects if not set)")
 	keyFile := flag.String("key", "data/key", "path to key file")
 	port := flag.String("port", "8080", "listen port")
+	dumpJSON := flag.Bool("json", false, "output entire database as JSON to stdout and exit")
 	flag.Parse()
 
 	// Determine plist file path
@@ -362,6 +392,25 @@ func main() {
 		}
 	}
 	activeKeyFile = *keyFile
+
+	if *dumpJSON {
+		log.SetOutput(io.Discard)
+		if activePlistFile == "" {
+			fmt.Fprintln(os.Stderr, "no data file found")
+			os.Exit(1)
+		}
+		if err := reloadData(); err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			os.Exit(1)
+		}
+		enc := json.NewEncoder(os.Stdout)
+		enc.SetIndent("", "  ")
+		if err := enc.Encode(data); err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			os.Exit(1)
+		}
+		return
+	}
 
 	if activePlistFile != "" {
 		if err := reloadData(); err != nil {

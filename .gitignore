@@ -9,6 +9,7 @@ mactracker-go
 
 # temp data
 /!*data*/
+out.json
 
 # Data files
 data/
