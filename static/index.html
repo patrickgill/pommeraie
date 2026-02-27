@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="light">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -8,13 +8,25 @@
 </head>
 <body>
   <div id="app">
+    <header id="mobile-header">
+      <button id="menu-btn" aria-label="Open menu">
+        <span></span><span></span><span></span>
+      </button>
+      <div class="mobile-title">Orchard</div>
+    </header>
     <nav id="sidebar">
       <div class="sidebar-header">
-        <h1>Orchard</h1>
-        <input type="search" id="search" placeholder="Search products..." autocomplete="off">
+        <div class="sidebar-title-row">
+          <h1>Orchard</h1>
+          <button id="theme-toggle" aria-label="Toggle theme"></button>
+        </div>
+        <form id="search-form" action="#" role="search">
+          <input type="search" id="search" placeholder="Search products..." autocomplete="off">
+        </form>
       </div>
       <ul id="sidebar-list"></ul>
     </nav>
+    <div id="sidebar-overlay"></div>
     <main id="content">
       <div id="welcome">
         <h2>Apple Product Database</h2>

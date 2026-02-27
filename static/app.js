@@ -166,6 +166,9 @@ function formatValue(value) {
 let currentCategory = null;
 let currentSideboardIndex = null;
 let searchTimeout = null;
+let searchGen = 0;
+let itemSlugToUuid = {};
+let navigating = false;
 
 async function fetchJSON(url) {
   const res = await fetch(API + url);
@@ -173,11 +176,106 @@ async function fetchJSON(url) {
   return res.json();
 }
 
+// --- Routing ---
+
+function slugify(name) {
+  return name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+}
+
+let sideboardSlugToIndex = {};
+
+function itemSlug(name, uuid) {
+  let slug = slugify(name || 'unknown');
+  if (itemSlugToUuid[slug] && itemSlugToUuid[slug] !== uuid) {
+    slug = slug + '-' + uuid.slice(0, 8);
+  }
+  itemSlugToUuid[slug] = uuid;
+  return slug;
+}
+
+async function resolveSlugAndShow(slug) {
+  const query = slug.replace(/-/g, ' ');
+  const results = await fetchJSON(`/api/search?q=${encodeURIComponent(query)}`);
+  for (const item of results) {
+    if (slugify(item.modelName) === slug || itemSlug(item.modelName, item.uuid) === slug) {
+      showDetail(item.uuid, true);
+      return;
+    }
+  }
+  if (results.length > 0) {
+    showDetail(results[0].uuid, true);
+  } else {
+    showView('welcome');
+  }
+}
+
+function navigate(hash) {
+  navigating = true;
+  window.location.hash = hash;
+  navigating = false;
+}
+
+function handleRoute() {
+  const hash = window.location.hash || '#/';
+  const parts = hash.slice(1).split('/').filter(Boolean);
+
+  if (parts.length === 0) {
+    showView('welcome');
+    currentSideboardIndex = null;
+    document.querySelectorAll('#sidebar-list li').forEach(li => li.classList.remove('active'));
+    return;
+  }
+
+  if (parts[0] === 'browse' && parts[1] !== undefined) {
+    const slug = decodeURIComponent(parts.slice(1).join('/'));
+    const index = sideboardSlugToIndex[slug];
+    if (index !== undefined) {
+      selectSideboardEntry(index, true);
+    }
+    return;
+  }
+
+  if (parts[0] === 'item' && parts[1]) {
+    const itemKey = decodeURIComponent(parts.slice(1).join('/'));
+    const uuid = itemSlugToUuid[itemKey];
+    if (uuid) {
+      showDetail(uuid, true);
+    } else {
+      resolveSlugAndShow(itemKey);
+    }
+    return;
+  }
+
+  if (parts[0] === 'search' && parts[1]) {
+    const query = decodeURIComponent(parts.slice(1).join('/'));
+    const searchInput = document.getElementById('search');
+    if (document.activeElement !== searchInput) {
+      searchInput.value = query;
+    }
+    performSearch(query, true);
+    return;
+  }
+
+  showView('welcome');
+}
+
+window.addEventListener('hashchange', () => {
+  if (!navigating) handleRoute();
+});
+
+// --- Sidebar ---
+
 let sideboardEntries = [];
 
 async function loadSideboard() {
   const entries = await fetchJSON('/api/sideboard');
   sideboardEntries = entries;
+  sideboardSlugToIndex = {};
+  for (let i = 0; i < entries.length; i++) {
+    if (entries[i].type !== 'group') {
+      sideboardSlugToIndex[slugify(entries[i].name)] = i;
+    }
+  }
   const list = document.getElementById('sidebar-list');
   list.innerHTML = '';
 
@@ -218,25 +316,29 @@ function sideboardFetchURL(entry) {
   return null;
 }
 
-async function selectSideboardEntry(index) {
+async function selectSideboardEntry(index, fromRouter) {
   const entry = sideboardEntries[index];
   if (!entry || entry.type === 'group') return;
 
   currentCategory = entry.category || null;
   currentSideboardIndex = index;
 
+  if (!fromRouter) navigate(`#/browse/${slugify(entry.name)}`);
+
   document.querySelectorAll('#sidebar-list li').forEach(li => {
     li.classList.toggle('active', li.dataset.index === String(index));
   });
 
   showView('items-view');
-  document.getElementById('content').scrollTop = 0;
+  window.scrollTo(0, 0);
   document.getElementById('items-title').textContent = entry.name;
 
   const url = sideboardFetchURL(entry);
   const items = await fetchJSON(url);
   renderItemsGrid(items, document.getElementById('items-grid'));
   document.getElementById('items-status').textContent = `${items.length} item${items.length !== 1 ? 's' : ''}`;
+
+  closeSidebar();
 }
 
 function renderItemsGrid(items, container) {
@@ -244,7 +346,8 @@ function renderItemsGrid(items, container) {
   for (const item of items) {
     const card = document.createElement('div');
     card.className = 'item-card';
-    card.addEventListener('click', () => showDetail(item.uuid));
+    const slug = itemSlug(item.modelName, item.uuid);
+    card.addEventListener('click', () => showDetail(item.uuid, false, slug));
 
     let meta = '';
     if (item.introduction) meta += `Introduced: ${item.introduction}`;
@@ -271,10 +374,17 @@ function renderItemsGrid(items, container) {
   }
 }
 
-async function showDetail(uuid) {
+async function showDetail(uuid, fromRouter, slug) {
+  if (!fromRouter) {
+    const s = slug || itemSlug(uuid, uuid);
+    navigate(`#/item/${s}`);
+  }
   showView('detail-view');
-  document.getElementById('content').scrollTop = 0;
+  window.scrollTo(0, 0);
   const item = await fetchJSON(`/api/items/${uuid}`);
+  if (item.ModelName && item.UUID) {
+    itemSlug(item.ModelName, item.UUID);
+  }
   const content = document.getElementById('detail-content');
 
   const tagline = item.Tagline ? `<div class="tagline">${item.Tagline}</div>` : '';
@@ -330,51 +440,125 @@ function showView(id) {
   document.getElementById(id).classList.remove('hidden');
 }
 
+// --- Back button ---
+
 document.getElementById('back-btn').addEventListener('click', () => {
-  if (currentSideboardIndex !== null) {
-    selectSideboardEntry(currentSideboardIndex);
+  if (window.history.length > 1) {
+    history.back();
+  } else if (currentSideboardIndex !== null) {
+    navigate(`#/browse/${slugify(sideboardEntries[currentSideboardIndex].name)}`);
   } else {
-    showView('welcome');
+    navigate('#/');
   }
 });
+
+// --- Search ---
+
+async function performSearch(query, fromRouter) {
+  if (!fromRouter) navigate(`#/search/${encodeURIComponent(query)}`);
+  showView('search-results');
+  document.getElementById('search-status').textContent = '';
+  document.getElementById('search-grid').innerHTML = '';
+  const gen = ++searchGen;
+  const results = await fetchJSON(`/api/search?q=${encodeURIComponent(query)}`);
+  if (gen !== searchGen) return;
+  const grid = document.getElementById('search-grid');
+  if (results.length === 0) {
+    document.getElementById('search-status').textContent = '';
+    grid.innerHTML = `<div class="no-results">No results found for &ldquo;${query}&rdquo;</div>`;
+    return;
+  }
+  document.getElementById('search-status').textContent = `${results.length} item${results.length !== 1 ? 's' : ''}`;
+  for (const item of results) {
+    const card = document.createElement('div');
+    card.className = 'item-card';
+    const slug = itemSlug(item.modelName, item.uuid);
+    card.addEventListener('click', () => {
+      currentCategory = item.category;
+      showDetail(item.uuid, false, slug);
+    });
+    card.innerHTML = `
+      <span class="search-category">${formatCategoryName(item.category)}</span>
+      <h3>${item.modelName}</h3>
+      <div class="meta">${item.introduction || ''}</div>
+      ${item.supportStatus ? `<span class="status-badge ${statusClass(item.supportStatus)}">${item.supportStatus}</span>` : ''}
+    `;
+    grid.appendChild(card);
+  }
+}
 
 document.getElementById('search').addEventListener('input', (e) => {
   clearTimeout(searchTimeout);
-  const q = e.target.value.trim();
+  const raw = e.target.value;
+  const q = raw.trim();
   if (q.length < 2) {
-    if (currentSideboardIndex !== null) {
-      selectSideboardEntry(currentSideboardIndex);
-    } else {
-      showView('welcome');
+    if (q.length === 0) {
+      if (currentSideboardIndex !== null) {
+        navigate(`#/browse/${slugify(sideboardEntries[currentSideboardIndex].name)}`);
+      } else {
+        navigate('#/');
+      }
     }
     return;
   }
-  searchTimeout = setTimeout(async () => {
-    const results = await fetchJSON(`/api/search?q=${encodeURIComponent(q)}`);
-    showView('search-results');
-    const grid = document.getElementById('search-grid');
-    grid.innerHTML = '';
-    document.getElementById('search-status').textContent = `${results.length} item${results.length !== 1 ? 's' : ''}`;
-    if (results.length === 0) {
-      grid.innerHTML = '<p style="color: var(--text-secondary)">No results found.</p>';
-      return;
-    }
-    for (const item of results) {
-      const card = document.createElement('div');
-      card.className = 'item-card';
-      card.addEventListener('click', () => {
-        currentCategory = item.category;
-        showDetail(item.uuid);
-      });
-      card.innerHTML = `
-        <span class="search-category">${formatCategoryName(item.category)}</span>
-        <h3>${item.modelName}</h3>
-        <div class="meta">${item.introduction || ''}</div>
-        ${item.supportStatus ? `<span class="status-badge ${statusClass(item.supportStatus)}">${item.supportStatus}</span>` : ''}
-      `;
-      grid.appendChild(card);
-    }
-  }, 250);
+  searchTimeout = setTimeout(() => performSearch(q), 250);
 });
 
-loadSideboard();
+document.getElementById('search-form').addEventListener('submit', (e) => {
+  e.preventDefault();
+  clearTimeout(searchTimeout);
+  const q = document.getElementById('search').value.trim();
+  if (q.length >= 2) {
+    performSearch(q);
+  }
+  document.getElementById('search').blur();
+  closeSidebar();
+});
+
+// --- Theme toggle ---
+
+function systemTheme() {
+  return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+}
+
+function applyTheme(mode) {
+  const html = document.documentElement;
+  html.classList.remove('light', 'dark');
+  html.classList.add(mode);
+  document.getElementById('theme-toggle').textContent = mode === 'dark' ? '\u263E' : '\u2600';
+}
+
+applyTheme(localStorage.getItem('theme') || systemTheme());
+
+document.getElementById('theme-toggle').addEventListener('click', () => {
+  const next = document.documentElement.classList.contains('dark') ? 'light' : 'dark';
+  localStorage.setItem('theme', next);
+  applyTheme(next);
+});
+
+// --- Mobile sidebar toggle ---
+
+function openSidebar() {
+  document.getElementById('sidebar').classList.add('open');
+  document.getElementById('sidebar-overlay').classList.add('visible');
+}
+
+function closeSidebar() {
+  document.getElementById('sidebar').classList.remove('open');
+  document.getElementById('sidebar-overlay').classList.remove('visible');
+}
+
+document.getElementById('menu-btn').addEventListener('click', () => {
+  const sidebar = document.getElementById('sidebar');
+  if (sidebar.classList.contains('open')) {
+    closeSidebar();
+  } else {
+    openSidebar();
+  }
+});
+
+document.getElementById('sidebar-overlay').addEventListener('click', closeSidebar);
+
+// --- Startup ---
+
+loadSideboard().then(() => handleRoute());
