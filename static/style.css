@@ -467,6 +467,16 @@ html.dark ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); }
     letter-spacing: -0.02em;
   }
 
+  #mobile-back {
+    background: none;
+    border: none;
+    color: var(--accent);
+    font-size: 20px;
+    cursor: pointer;
+    padding: 4px;
+    line-height: 1;
+  }
+
   #sidebar {
     position: fixed;
     top: 0;

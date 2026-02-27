@@ -438,11 +438,15 @@ function showView(id) {
   document.getElementById('detail-view').classList.add('hidden');
   document.getElementById('search-results').classList.add('hidden');
   document.getElementById(id).classList.remove('hidden');
+
+  const isDetail = id === 'detail-view';
+  document.getElementById('mobile-back').classList.toggle('hidden', !isDetail);
+  document.getElementById('menu-btn').classList.toggle('hidden', isDetail);
 }
 
 // --- Back button ---
 
-document.getElementById('back-btn').addEventListener('click', () => {
+function goBack() {
   if (window.history.length > 1) {
     history.back();
   } else if (currentSideboardIndex !== null) {
@@ -450,6 +454,11 @@ document.getElementById('back-btn').addEventListener('click', () => {
   } else {
     navigate('#/');
   }
+}
+
+document.getElementById('back-btn').addEventListener('click', goBack);
+document.getElementById('mobile-back').addEventListener('click', () => {
+  goBack();
 });
 
 // --- Search ---
