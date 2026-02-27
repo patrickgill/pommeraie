@@ -8,7 +8,6 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"reflect"
 	"sort"
 	"strings"
 
@@ -81,7 +80,7 @@ func handleCategories(w http.ResponseWriter, r *http.Request) {
 		Count int    `json:"count"`
 	}
 
-	var cats []Category
+	cats := make([]Category, 0)
 	for _, name := range catNames {
 		arr := data[name].([]interface{})
 		cats = append(cats, Category{Name: name, Count: len(arr)})
@@ -105,7 +104,7 @@ func handleCategoryItems(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var items []ItemSummary
+	items := make([]ItemSummary, 0)
 	for _, item := range arr {
 		m, ok := item.(map[string]interface{})
 		if !ok {
@@ -143,7 +142,7 @@ func handleSearch(w http.ResponseWriter, r *http.Request) {
 		SortDate      int    `json:"sortDate"`
 	}
 
-	var results []SearchResult
+	results := make([]SearchResult, 0)
 	for _, name := range catNames {
 		arr := data[name].([]interface{})
 		for _, item := range arr {
@@ -199,12 +198,6 @@ func intVal(m map[string]interface{}, key string) int {
 }
 
 func writeJSON(w http.ResponseWriter, v interface{}) {
-	// Ensure nil slices encode as [] instead of null
-	if v == nil {
-		v = []interface{}{}
-	} else if rv := reflect.ValueOf(v); rv.Kind() == reflect.Slice && rv.IsNil() {
-		v = []interface{}{}
-	}
 	w.Header().Set("Content-Type", "application/json")
 	enc := json.NewEncoder(w)
 	enc.SetIndent("", "  ")

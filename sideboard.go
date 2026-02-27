@@ -66,7 +66,7 @@ func handleMultiCategory(w http.ResponseWriter, r *http.Request) {
 	}
 
 	names := strings.Split(namesParam, ",")
-	var items []ItemSummary
+	items := make([]ItemSummary, 0)
 	for _, name := range names {
 		name = strings.TrimSpace(name)
 		val, ok := data[name]
@@ -112,7 +112,7 @@ func handleFilter(w http.ResponseWriter, r *http.Request) {
 		cats = catNames
 	}
 
-	var items []ItemSummary
+	items := make([]ItemSummary, 0)
 	for _, catName := range cats {
 		val, ok := data[catName]
 		if !ok {
