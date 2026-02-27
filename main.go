@@ -219,34 +219,42 @@ func writeJSON(w http.ResponseWriter, v interface{}) {
 }
 
 func main() {
-	plistPath := flag.String("plist", "data/CoreCollection.data", "path to plist file")
-	keyFile := flag.String("key", "data/key", "path to key file (optional, omit or leave empty for plaintext plist)")
+	plistPath := flag.String("plist", "", "path to plist file (auto-detects if not set)")
+	keyFile := flag.String("key", "data/key", "path to key file")
 	addr := flag.String("addr", ":8080", "listen address")
 	flag.Parse()
 
-	// Try to read key from file
-	var keyHex string
-	if *keyFile != "" {
-		keyBytes, err := os.ReadFile(*keyFile)
-		if err == nil {
-			keyHex = strings.TrimSpace(string(keyBytes))
-			log.Printf("Loaded decryption key from %s", *keyFile)
-		} else if !os.IsNotExist(err) {
-			log.Fatalf("Failed to read key file %s: %v", *keyFile, err)
+	// Determine plist file path
+	plistFile := *plistPath
+	if plistFile == "" {
+		if _, err := os.Stat("data/CoreCollection.plist"); err == nil {
+			plistFile = "data/CoreCollection.plist"
+		} else if _, err := os.Stat("data/CoreCollection.data"); err == nil {
+			plistFile = "data/CoreCollection.data"
 		} else {
-			log.Printf("No key file found at %s, loading plist as plaintext", *keyFile)
+			log.Fatal("No plist file found (tried data/CoreCollection.plist and data/CoreCollection.data)")
 		}
 	}
 
-	log.Printf("Loading plist from %s...", *plistPath)
-	if keyHex != "" {
-		log.Printf("Decryption enabled (AES-128-CBC, zero IV)")
-	} else {
-		log.Printf("No decryption key, loading as plaintext")
+	// Read file and detect if encrypted
+	raw, err := os.ReadFile(plistFile)
+	if err != nil {
+		log.Fatalf("Failed to read %s: %v", plistFile, err)
 	}
 
-	var err error
-	data, err = loadPlist(*plistPath, keyHex)
+	var keyHex string
+	if validatePlist(raw) == nil {
+		log.Printf("Loading plaintext plist from %s", plistFile)
+	} else {
+		keyBytes, err := os.ReadFile(*keyFile)
+		if err != nil {
+			log.Fatalf("Data file %s appears encrypted but no key found at %s", plistFile, *keyFile)
+		}
+		keyHex = strings.TrimSpace(string(keyBytes))
+		log.Printf("Loading encrypted plist from %s (key from %s)", plistFile, *keyFile)
+	}
+
+	data, err = loadPlist(plistFile, keyHex)
 	if err != nil {
 		log.Fatalf("Failed to load plist: %v", err)
 	}
