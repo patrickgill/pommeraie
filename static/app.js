@@ -164,6 +164,7 @@ function formatValue(value) {
 }
 
 let currentCategory = null;
+let currentSideboardIndex = null;
 let searchTimeout = null;
 
 async function fetchJSON(url) {
@@ -172,30 +173,68 @@ async function fetchJSON(url) {
   return res.json();
 }
 
-async function loadCategories() {
-  const categories = await fetchJSON('/api/categories');
-  const list = document.getElementById('category-list');
+let sideboardEntries = [];
+
+async function loadSideboard() {
+  const entries = await fetchJSON('/api/sideboard');
+  sideboardEntries = entries;
+  const list = document.getElementById('sidebar-list');
   list.innerHTML = '';
-  for (const cat of categories) {
+
+  for (let i = 0; i < entries.length; i++) {
+    const entry = entries[i];
+
+    if (entry.type === 'group') {
+      const li = document.createElement('li');
+      li.className = 'sidebar-group';
+      li.textContent = entry.name;
+      list.appendChild(li);
+      continue;
+    }
+
     const li = document.createElement('li');
-    li.dataset.name = cat.name;
-    li.innerHTML = `<span>${formatCategoryName(cat.name)}</span><span class="count">${cat.count}</span>`;
-    li.addEventListener('click', () => selectCategory(cat.name));
+    li.dataset.index = i;
+    li.innerHTML = `<span>${entry.name}</span>`;
+    li.addEventListener('click', () => selectSideboardEntry(i));
     list.appendChild(li);
   }
 }
 
-async function selectCategory(name) {
-  currentCategory = name;
+function sideboardFetchURL(entry) {
+  if (entry.type === 'category') {
+    if (entry.categories) {
+      return `/api/multicategory?names=${entry.categories.join(',')}`;
+    }
+    return `/api/categories/${entry.category}`;
+  }
+  if (entry.type === 'filter') {
+    const f = entry.filter;
+    let url = `/api/filter?field=${encodeURIComponent(f.field)}&op=${encodeURIComponent(f.op)}&value=${encodeURIComponent(f.value)}`;
+    if (f.categories) {
+      url += `&categories=${f.categories.join(',')}`;
+    }
+    return url;
+  }
+  return null;
+}
 
-  document.querySelectorAll('#category-list li').forEach(li => {
-    li.classList.toggle('active', li.dataset.name === name);
+async function selectSideboardEntry(index) {
+  const entry = sideboardEntries[index];
+  if (!entry || entry.type === 'group') return;
+
+  currentCategory = entry.category || null;
+  currentSideboardIndex = index;
+
+  document.querySelectorAll('#sidebar-list li').forEach(li => {
+    li.classList.toggle('active', li.dataset.index === String(index));
   });
 
   showView('items-view');
-  document.getElementById('items-title').textContent = formatCategoryName(name);
+  document.getElementById('content').scrollTop = 0;
+  document.getElementById('items-title').textContent = entry.name;
 
-  const items = await fetchJSON(`/api/categories/${name}`);
+  const url = sideboardFetchURL(entry);
+  const items = await fetchJSON(url);
   document.getElementById('items-count').textContent = `${items.length} products`;
   renderItemsGrid(items, document.getElementById('items-grid'));
 }
@@ -291,8 +330,8 @@ function showView(id) {
 }
 
 document.getElementById('back-btn').addEventListener('click', () => {
-  if (currentCategory) {
-    selectCategory(currentCategory);
+  if (currentSideboardIndex !== null) {
+    selectSideboardEntry(currentSideboardIndex);
   } else {
     showView('welcome');
   }
@@ -302,8 +341,8 @@ document.getElementById('search').addEventListener('input', (e) => {
   clearTimeout(searchTimeout);
   const q = e.target.value.trim();
   if (q.length < 2) {
-    if (currentCategory) {
-      selectCategory(currentCategory);
+    if (currentSideboardIndex !== null) {
+      selectSideboardEntry(currentSideboardIndex);
     } else {
       showView('welcome');
     }
@@ -336,4 +375,4 @@ document.getElementById('search').addEventListener('input', (e) => {
   }, 250);
 });
 
-loadCategories();
+loadSideboard();

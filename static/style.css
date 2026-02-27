@@ -75,14 +75,14 @@ html, body {
   box-shadow: 0 0 0 2px var(--accent);
 }
 
-#category-list {
+#sidebar-list {
   list-style: none;
   overflow-y: auto;
   flex: 1;
   padding: 8px 0;
 }
 
-#category-list li {
+#sidebar-list li {
   padding: 8px 16px;
   cursor: pointer;
   font-size: 13px;
@@ -94,15 +94,15 @@ html, body {
   margin: 1px 8px;
 }
 
-#category-list li:hover {
+#sidebar-list li:hover {
   background: var(--sidebar-hover);
 }
 
-#category-list li.active {
+#sidebar-list li.active {
   background: var(--sidebar-active);
 }
 
-#category-list li .count {
+#sidebar-list li .count {
   font-size: 11px;
   opacity: 0.5;
   background: rgba(255,255,255,0.1);
@@ -110,8 +110,23 @@ html, body {
   border-radius: 10px;
 }
 
-#category-list li.active .count {
+#sidebar-list li.active .count {
   background: rgba(255,255,255,0.2);
+}
+
+#sidebar-list li.sidebar-group {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: rgba(255,255,255,0.4);
+  padding: 16px 16px 4px;
+  cursor: default;
+  background: none;
+}
+
+#sidebar-list li.sidebar-group:hover {
+  background: none;
 }
 
 /* Main content */
@@ -345,3 +360,4 @@ html, body {
 #sidebar ::-webkit-scrollbar-thumb {
   background: rgba(255,255,255,0.2);
 }
+

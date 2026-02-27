@@ -1,0 +1,32 @@
+[
+  { "type": "group", "name": "Status" },
+  { "name": "Currently Supported", "type": "filter", "filter": { "field": "SupportStatus", "op": "eq", "value": "Supported" } },
+  { "name": "Vintage", "type": "filter", "filter": { "field": "SupportStatus", "op": "eq", "value": "Vintage" } },
+  { "name": "Obsolete", "type": "filter", "filter": { "field": "SupportStatus", "op": "eq", "value": "Obsolete" } },
+
+  { "type": "group", "name": "Mac" },
+  { "name": "All Macs", "type": "filter", "filter": { "field": "TemplateFile", "op": "contains", "value": "mac" } },
+  { "name": "iMac", "type": "category", "category": "iMacs" },
+  { "name": "MacBook Pro", "type": "category", "category": "MacBookPros" },
+  { "name": "MacBook Air", "type": "category", "category": "MacBookAir" },
+  { "name": "Mac mini", "type": "category", "category": "Macminis" },
+  { "name": "Mac Pro", "type": "category", "category": "MacPros" },
+  { "name": "Mac Studio", "type": "category", "category": "MacStudios" },
+
+  { "type": "group", "name": "Mobile" },
+  { "name": "iPhone", "type": "category", "category": "Phones" },
+  { "name": "iPad", "type": "category", "categories": ["iPads", "iPadPros", "iPadAirs", "iPadminis"] },
+  { "name": "Apple Watch", "type": "category", "category": "Watches" },
+  { "name": "iPod", "type": "category", "category": "iPods" },
+
+  { "type": "group", "name": "Software" },
+  { "name": "macOS", "type": "category", "category": "MacOSX" },
+  { "name": "iOS", "type": "category", "category": "iOS" },
+  { "name": "iPadOS", "type": "category", "category": "iPadOS" },
+
+  { "type": "group", "name": "Other" },
+  { "name": "Displays", "type": "category", "category": "Displays" },
+  { "name": "Apple TV", "type": "category", "category": "AppleTVs" },
+  { "name": "Vision Pro", "type": "category", "category": "VisionPro" },
+  { "name": "Accessories", "type": "category", "categories": ["MiceAndKeyboards", "Speakers", "Printers", "Scanners"] }
+]

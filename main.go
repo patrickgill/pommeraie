@@ -107,40 +107,16 @@ func handleCategoryItems(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Return summary items (just key fields, not everything)
-	type ItemSummary struct {
-		UUID             string `json:"uuid"`
-		ModelName        string `json:"modelName"`
-		AppleFileIcon    string `json:"appleFileIcon"`
-		Introduction     string `json:"introduction"`
-		Discontinued     string `json:"discontinued"`
-		Processor        string `json:"processor"`
-		SupportStatus    string `json:"supportStatus"`
-		Tagline          string `json:"tagline"`
-		PurchasePriceUSD string `json:"purchasePriceUSD"`
-		SortDate         int    `json:"sortDate"`
-	}
-
 	var items []ItemSummary
 	for _, item := range arr {
 		m, ok := item.(map[string]interface{})
 		if !ok {
 			continue
 		}
-		items = append(items, ItemSummary{
-			UUID:             strVal(m, "UUID"),
-			ModelName:        strVal(m, "ModelName"),
-			AppleFileIcon:    strVal(m, "AppleFileIcon"),
-			Introduction:     strVal(m, "Introduction"),
-			Discontinued:     strVal(m, "Discontinued"),
-			Processor:        strVal(m, "Processor"),
-			SupportStatus:    strVal(m, "SupportStatus"),
-			Tagline:          strVal(m, "Tagline"),
-			PurchasePriceUSD: strVal(m, "PurchasePriceUSD"),
-			SortDate:         intVal(m, "SortDate"),
-		})
+		items = append(items, toItemSummary(m))
 	}
 
+	sortItemsNewestFirst(items)
 	writeJSON(w, items)
 }
 
@@ -189,7 +165,7 @@ func handleSearch(w http.ResponseWriter, r *http.Request) {
 				continue
 			}
 			modelName := strVal(m, "ModelName")
-			if strings.Contains(strings.ToLower(modelName), query) {
+			if strings.Contains(strings.ToLower(modelName), query) || modelMatches(m, strings.ToUpper(query)) {
 				results = append(results, SearchResult{
 					UUID:          strVal(m, "UUID"),
 					ModelName:     modelName,
@@ -287,6 +263,10 @@ func main() {
 	mux.HandleFunc("GET /api/categories/{name}", handleCategoryItems)
 	mux.HandleFunc("GET /api/items/{uuid}", handleItemDetail)
 	mux.HandleFunc("GET /api/search", handleSearch)
+	mux.HandleFunc("GET /api/sideboard", handleSideboard)
+	mux.HandleFunc("GET /api/filter", handleFilter)
+	mux.HandleFunc("GET /api/multicategory", handleMultiCategory)
+	mux.HandleFunc("GET /api/lookup", handleModelLookup)
 	mux.Handle("GET /", http.FileServer(http.Dir("static")))
 
 	log.Printf("Server starting on http://localhost%s", *addr)
