@@ -597,9 +597,33 @@ html.dark #connection-error { background: #451a1a; color: #fca5a5; }
 }
 
 @media print {
+  html, html.dark, html.light {
+    --bg: #fff;
+    --card-bg: #fff;
+    --text: #000;
+    --text-secondary: #000;
+    --border: #000;
+    --accent: #000;
+    color-scheme: light;
+  }
+
+  body {
+    background: #fff;
+    color: #000;
+  }
+
+  .status-badge.supported,
+  .status-badge.obsolete,
+  .status-badge.vintage,
+  .status-badge.mixed {
+    background: none;
+    color: #000;
+    border: 1px solid #000;
+  }
+
   #sidebar, #mobile-header, #sidebar-overlay, #back-btn,
   #welcome, #items-view, #search-results, #theme-toggle,
-  #connection-error {
+  #connection-error, .fav-btn {
     display: none !important;
   }
 
