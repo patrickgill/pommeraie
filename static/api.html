@@ -116,9 +116,36 @@
                 overflow-x: auto;
                 margin: 8px 0;
                 line-height: 1.5;
+                position: relative;
             }
             pre .comment {
                 color: #86868b;
+            }
+            .copy-btn {
+                position: absolute;
+                top: 8px;
+                right: 8px;
+                background: rgba(255, 255, 255, 0.1);
+                border: none;
+                border-radius: 6px;
+                color: #86868b;
+                font-family: "SF Mono", SFMono-Regular, Menlo, monospace;
+                font-size: 11px;
+                padding: 4px 10px;
+                cursor: pointer;
+                opacity: 0;
+                transition: opacity 0.15s, background 0.15s;
+            }
+            pre:hover .copy-btn {
+                opacity: 1;
+            }
+            .copy-btn:hover {
+                background: rgba(255, 255, 255, 0.2);
+                color: #e8e8ed;
+            }
+            .copy-btn.copied {
+                opacity: 1;
+                color: #34c759;
             }
             .label {
                 font-size: 12px;
@@ -498,5 +525,26 @@ curl "http://localhost:8080/api/filter?field=SupportStatus&amp;op=eq&amp;value=S
 
             <a href="/" class="back-link">Return to the homepage</a>
         </div>
+        <script>
+            document.querySelectorAll("pre").forEach(function (pre) {
+                var btn = document.createElement("button");
+                btn.className = "copy-btn";
+                btn.textContent = "Copy";
+                btn.addEventListener("click", function () {
+                    var text = pre.textContent
+                        .replace(btn.textContent, "")
+                        .trim();
+                    navigator.clipboard.writeText(text).then(function () {
+                        btn.textContent = "Copied";
+                        btn.classList.add("copied");
+                        setTimeout(function () {
+                            btn.textContent = "Copy";
+                            btn.classList.remove("copied");
+                        }, 1500);
+                    });
+                });
+                pre.appendChild(btn);
+            });
+        </script>
     </body>
 </html>
