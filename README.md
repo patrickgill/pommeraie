@@ -57,7 +57,7 @@ Full interactive documentation is available at [`/api`](http://localhost:8080/ap
 
 ### Filter Operators
 
-The `/api/filter` endpoint supports: `eq`, `contains`, `prefix`, `regex`, `gt`, `lt`.
+The `/api/filter` endpoint supports: `eq`, `contains`, `prefix`, `gt`, `lt`.
 
 ## Sidebar Config
 

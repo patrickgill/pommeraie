@@ -3,7 +3,6 @@ package main
 import (
 	"net/http"
 	"os"
-	"regexp"
 	"sort"
 	"strconv"
 	"strings"
@@ -252,12 +251,6 @@ func matchFilter(fieldVal, op, value string) bool {
 		return strings.Contains(strings.ToLower(fieldVal), strings.ToLower(value))
 	case "prefix":
 		return strings.HasPrefix(strings.ToLower(fieldVal), strings.ToLower(value))
-	case "regex":
-		re, err := regexp.Compile(value)
-		if err != nil {
-			return false
-		}
-		return re.MatchString(fieldVal)
 	case "gt":
 		a, err1 := strconv.ParseFloat(fieldVal, 64)
 		b, err2 := strconv.ParseFloat(value, 64)
