@@ -889,7 +889,7 @@ function applyTheme(mode) {
   html.classList.remove("light", "dark");
   html.classList.add(mode);
   document.getElementById("theme-toggle").textContent =
-    mode === "dark" ? "\u263E" : "\u2600";
+    mode === "dark" ? "\u2600" : "\u263E";
 }
 
 applyTheme(localStorage.getItem("theme") || systemTheme());

@@ -539,6 +539,9 @@ func main() {
 	mux.HandleFunc("GET /upload", func(w http.ResponseWriter, r *http.Request) {
 		http.ServeFile(w, r, "static/upload.html")
 	})
+	mux.HandleFunc("GET /api", func(w http.ResponseWriter, r *http.Request) {
+		http.ServeFile(w, r, "static/api.html")
+	})
 	fileServer := http.FileServer(http.Dir("static"))
 	mux.HandleFunc("GET /", func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/" && data == nil {

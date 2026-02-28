@@ -36,6 +36,8 @@ Files can also be uploaded via the web UI at `/upload`.
 
 ## API
 
+Full interactive documentation is available at [`/api`](http://localhost:8080/api) when the server is running.
+
 | Method | Endpoint | Description |
 |--------|----------|-------------|
 | `GET` | `/api/categories` | List all product categories with item counts |
@@ -87,6 +89,7 @@ static/
   index.html     Main app shell
   app.js         Frontend SPA logic
   style.css      Styles
+  api.html       API documentation page
   upload.html    Data file upload page
   upload.js      Upload page logic
 ```

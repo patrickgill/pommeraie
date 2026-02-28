@@ -1,0 +1,501 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>API Documentation — Pommeraie</title>
+        <style>
+            * {
+                margin: 0;
+                padding: 0;
+                box-sizing: border-box;
+            }
+            body {
+                font-family:
+                    -apple-system, BlinkMacSystemFont, "SF Pro Text",
+                    "Helvetica Neue", sans-serif;
+                background: #f5f5f7;
+                color: #1d1d1f;
+                padding: 40px 20px;
+                line-height: 1.5;
+            }
+            .container {
+                background: #fff;
+                border-radius: 16px;
+                box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+                padding: 48px;
+                max-width: 860px;
+                margin: 0 auto;
+            }
+            h1 {
+                font-size: 28px;
+                font-weight: 600;
+                margin-bottom: 4px;
+            }
+            .subtitle {
+                font-size: 15px;
+                color: #86868b;
+                margin-bottom: 32px;
+            }
+            h2 {
+                font-size: 20px;
+                font-weight: 600;
+                margin-top: 40px;
+                margin-bottom: 16px;
+                padding-top: 24px;
+                border-top: 1px solid #e8e8ed;
+            }
+            h2:first-of-type {
+                margin-top: 0;
+                padding-top: 0;
+                border-top: none;
+            }
+            .endpoint {
+                margin-bottom: 32px;
+            }
+            .endpoint-header {
+                display: flex;
+                align-items: baseline;
+                gap: 10px;
+                margin-bottom: 6px;
+                flex-wrap: wrap;
+            }
+            .method {
+                font-family: "SF Mono", SFMono-Regular, Menlo, monospace;
+                font-size: 12px;
+                font-weight: 600;
+                background: #e8f5e8;
+                color: #1b7d2c;
+                padding: 2px 8px;
+                border-radius: 4px;
+                flex-shrink: 0;
+            }
+            .path {
+                font-family: "SF Mono", SFMono-Regular, Menlo, monospace;
+                font-size: 15px;
+                font-weight: 500;
+                color: #1d1d1f;
+            }
+            .endpoint p {
+                font-size: 14px;
+                color: #424245;
+                margin-bottom: 10px;
+            }
+            .params {
+                margin: 10px 0;
+            }
+            .params-title {
+                font-size: 13px;
+                font-weight: 600;
+                color: #86868b;
+                text-transform: uppercase;
+                letter-spacing: 0.5px;
+                margin-bottom: 6px;
+            }
+            .param {
+                font-size: 13px;
+                padding: 4px 0;
+                display: flex;
+                gap: 8px;
+            }
+            .param-name {
+                font-family: "SF Mono", SFMono-Regular, Menlo, monospace;
+                color: #0071e3;
+                flex-shrink: 0;
+            }
+            .param-desc {
+                color: #424245;
+            }
+            pre {
+                background: #1d1d1f;
+                color: #e8e8ed;
+                font-family: "SF Mono", SFMono-Regular, Menlo, monospace;
+                font-size: 13px;
+                padding: 14px 18px;
+                border-radius: 10px;
+                overflow-x: auto;
+                margin: 8px 0;
+                line-height: 1.5;
+            }
+            pre .comment {
+                color: #86868b;
+            }
+            .label {
+                font-size: 12px;
+                font-weight: 600;
+                color: #86868b;
+                text-transform: uppercase;
+                letter-spacing: 0.5px;
+                margin-top: 10px;
+                margin-bottom: 4px;
+            }
+            table {
+                width: 100%;
+                border-collapse: collapse;
+                font-size: 13px;
+                margin: 8px 0;
+            }
+            th {
+                text-align: left;
+                font-weight: 600;
+                color: #86868b;
+                padding: 6px 12px 6px 0;
+                border-bottom: 1px solid #e8e8ed;
+            }
+            td {
+                padding: 6px 12px 6px 0;
+                border-bottom: 1px solid #f5f5f7;
+                vertical-align: top;
+            }
+            td:first-child {
+                font-family: "SF Mono", SFMono-Regular, Menlo, monospace;
+                color: #0071e3;
+                white-space: nowrap;
+            }
+            .back-link {
+                display: inline-block;
+                margin-top: 32px;
+                font-size: 14px;
+                color: #0071e3;
+                text-decoration: none;
+            }
+            .back-link:hover {
+                text-decoration: underline;
+            }
+            .note {
+                background: #f0f7ff;
+                border-left: 3px solid #0071e3;
+                padding: 12px 16px;
+                border-radius: 0 8px 8px 0;
+                font-size: 13px;
+                color: #424245;
+                margin: 16px 0;
+            }
+            @media (max-width: 600px) {
+                .container {
+                    padding: 24px 16px;
+                }
+                .endpoint-header {
+                    gap: 6px;
+                }
+                .path {
+                    font-size: 13px;
+                }
+            }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <h1>Pommeraie API</h1>
+            <p class="subtitle">
+                REST API for querying the Apple product database. All responses
+                are JSON.
+            </p>
+
+            <h2>Categories</h2>
+
+            <div class="endpoint">
+                <div class="endpoint-header">
+                    <span class="method">GET</span>
+                    <span class="path">/api/categories</span>
+                </div>
+                <p>List all product categories with item counts.</p>
+                <div class="label">Example</div>
+                <pre>curl http://localhost:8080/api/categories</pre>
+                <div class="label">Response</div>
+                <pre>[
+  { "name": "Macs", "count": 542 },
+  { "name": "iPads", "count": 87 },
+  ...
+]</pre>
+            </div>
+
+            <div class="endpoint">
+                <div class="endpoint-header">
+                    <span class="method">GET</span>
+                    <span class="path">/api/categories/{name}</span>
+                </div>
+                <p>
+                    List all items in a category. Returns an array of item
+                    summaries sorted newest-first.
+                </p>
+                <div class="params">
+                    <div class="params-title">Path Parameters</div>
+                    <div class="param">
+                        <span class="param-name">name</span>
+                        <span class="param-desc"
+                            >Category name exactly as returned by
+                            <code>/api/categories</code>.</span
+                        >
+                    </div>
+                </div>
+                <div class="label">Example</div>
+                <pre>curl http://localhost:8080/api/categories/Macs</pre>
+                <div class="label">Response</div>
+                <pre>[
+  {
+    "uuid": "F3A1B2C4-...",
+    "modelName": "MacBook Pro (16-inch, M4 Max, Nov 2024)",
+    "introduction": "November 8, 2024",
+    "supportStatus": "Current",
+    "sortDate": 20241108
+  },
+  ...
+]</pre>
+            </div>
+
+            <h2>Items</h2>
+
+            <div class="endpoint">
+                <div class="endpoint-header">
+                    <span class="method">GET</span>
+                    <span class="path">/api/items/{uuid}</span>
+                </div>
+                <p>
+                    Get the full detail record for a single item by its UUID.
+                    Returns every field from the plist.
+                </p>
+                <div class="params">
+                    <div class="params-title">Path Parameters</div>
+                    <div class="param">
+                        <span class="param-name">uuid</span>
+                        <span class="param-desc"
+                            >Item UUID from a category listing or search
+                            result.</span
+                        >
+                    </div>
+                </div>
+                <div class="label">Example</div>
+                <pre>curl http://localhost:8080/api/items/F3A1B2C4-...</pre>
+            </div>
+
+            <h2>Search</h2>
+
+            <div class="endpoint">
+                <div class="endpoint-header">
+                    <span class="method">GET</span>
+                    <span class="path">/api/search?q=...</span>
+                </div>
+                <p>
+                    Full-text search across all product names. Also matches
+                    order numbers, family numbers, and machine IDs. Results are
+                    sorted newest-first.
+                </p>
+                <div class="params">
+                    <div class="params-title">Query Parameters</div>
+                    <div class="param">
+                        <span class="param-name">q</span>
+                        <span class="param-desc"
+                            >Search query (case-insensitive).</span
+                        >
+                    </div>
+                </div>
+                <div class="label">Example</div>
+                <pre>curl "http://localhost:8080/api/search?q=MacBook+Pro"</pre>
+            </div>
+
+            <h2>Model Lookup</h2>
+
+            <div class="endpoint">
+                <div class="endpoint-header">
+                    <span class="method">GET</span>
+                    <span class="path">/api/lookup?q=...</span>
+                </div>
+                <p>
+                    Smart lookup by order number, family number, or machine ID.
+                    Returns the full detail record for the first match.
+                </p>
+                <div class="params">
+                    <div class="params-title">Query Parameters</div>
+                    <div class="param">
+                        <span class="param-name">q</span>
+                        <span class="param-desc"
+                            >Order number (e.g.
+                            <code>MX2E3LL/A</code>), family number (e.g.
+                            <code>A3401</code>), or machine ID (e.g.
+                            <code>Mac16,8</code>).</span
+                        >
+                    </div>
+                </div>
+                <div class="label">Example</div>
+                <pre><span class="comment"># Look up by order number</span>
+curl "http://localhost:8080/api/lookup?q=MX2E3LL/A"
+
+<span class="comment"># Look up by machine ID</span>
+curl "http://localhost:8080/api/lookup?q=Mac16,8"</pre>
+            </div>
+
+            <h2>Filter</h2>
+
+            <div class="endpoint">
+                <div class="endpoint-header">
+                    <span class="method">GET</span>
+                    <span class="path">/api/filter?field=...&amp;op=...&amp;value=...</span>
+                </div>
+                <p>
+                    Dynamic filtering across items by any plist field. Returns
+                    matching item summaries sorted newest-first.
+                </p>
+                <div class="params">
+                    <div class="params-title">Query Parameters</div>
+                    <div class="param">
+                        <span class="param-name">field</span>
+                        <span class="param-desc"
+                            >Plist field name (e.g.
+                            <code>SupportStatus</code>,
+                            <code>Processor</code>).</span
+                        >
+                    </div>
+                    <div class="param">
+                        <span class="param-name">op</span>
+                        <span class="param-desc"
+                            >Comparison operator (see table below).</span
+                        >
+                    </div>
+                    <div class="param">
+                        <span class="param-name">value</span>
+                        <span class="param-desc"
+                            >Value to compare against.</span
+                        >
+                    </div>
+                    <div class="param">
+                        <span class="param-name">categories</span>
+                        <span class="param-desc"
+                            >Optional. Comma-separated list of categories to
+                            search within. Defaults to all.</span
+                        >
+                    </div>
+                </div>
+
+                <div class="label">Filter Operators</div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Operator</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>eq</td>
+                            <td>
+                                Exact match (case-insensitive)
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>contains</td>
+                            <td>
+                                Substring match (case-insensitive)
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>prefix</td>
+                            <td>
+                                Starts with (case-insensitive)
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>regex</td>
+                            <td>
+                                Go regular expression match
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>gt</td>
+                            <td>
+                                Greater than (numeric or lexicographic)
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>lt</td>
+                            <td>
+                                Less than (numeric or lexicographic)
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <div class="label">Examples</div>
+                <pre><span class="comment"># Find all currently supported products</span>
+curl "http://localhost:8080/api/filter?field=SupportStatus&amp;op=eq&amp;value=Current"
+
+<span class="comment"># Find products with M4 processors</span>
+curl "http://localhost:8080/api/filter?field=Processor&amp;op=contains&amp;value=M4"
+
+<span class="comment"># Filter within specific categories</span>
+curl "http://localhost:8080/api/filter?field=SupportStatus&amp;op=eq&amp;value=Current&amp;categories=Macs,iPads"</pre>
+            </div>
+
+            <h2>Multi-Category</h2>
+
+            <div class="endpoint">
+                <div class="endpoint-header">
+                    <span class="method">GET</span>
+                    <span class="path">/api/multicategory?names=...</span>
+                </div>
+                <p>
+                    Merge items from multiple categories into a single sorted
+                    list.
+                </p>
+                <div class="params">
+                    <div class="params-title">Query Parameters</div>
+                    <div class="param">
+                        <span class="param-name">names</span>
+                        <span class="param-desc"
+                            >Comma-separated category names.</span
+                        >
+                    </div>
+                </div>
+                <div class="label">Example</div>
+                <pre>curl "http://localhost:8080/api/multicategory?names=Macs,iPads"</pre>
+            </div>
+
+            <h2>Status &amp; Configuration</h2>
+
+            <div class="endpoint">
+                <div class="endpoint-header">
+                    <span class="method">GET</span>
+                    <span class="path">/api/status</span>
+                </div>
+                <p>
+                    Server status: whether data is loaded, category/item
+                    counts, version info, and build metadata.
+                </p>
+                <div class="label">Example</div>
+                <pre>curl http://localhost:8080/api/status</pre>
+                <div class="label">Response</div>
+                <pre>{
+  "loaded": true,
+  "categories": 24,
+  "items": 4231,
+  "version": "0.1.0",
+  "build": { "go": "go1.23.0", "commit": "abc1234..." }
+}</pre>
+            </div>
+
+            <div class="endpoint">
+                <div class="endpoint-header">
+                    <span class="method">GET</span>
+                    <span class="path">/api/sideboard</span>
+                </div>
+                <p>
+                    Returns the sidebar navigation configuration
+                    (<code>sideboard.json</code>), which defines category
+                    groups, filters, and display rules used by the web UI.
+                </p>
+                <div class="label">Example</div>
+                <pre>curl http://localhost:8080/api/sideboard</pre>
+            </div>
+
+            <h2>CLI Usage</h2>
+
+            <div class="note">
+                You can also dump the entire database as JSON for local
+                processing with <code>jq</code> or other tools:
+                <pre style="margin-top: 8px; margin-bottom: 0">./pommeraie -json | jq '.Macs | length'</pre>
+            </div>
+
+            <a href="/" class="back-link">Return to the homepage</a>
+        </div>
+    </body>
+</html>
