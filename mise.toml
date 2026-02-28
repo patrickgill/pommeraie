@@ -1,2 +1,8 @@
 [tools]
 go = "latest"
+
+[tasks.build]
+run = "go build -o pommeraie"
+
+[tasks.run]
+run = "go run ."
