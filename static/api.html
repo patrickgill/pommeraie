@@ -204,8 +204,9 @@
                 <pre>curl http://localhost:8080/api/categories</pre>
                 <div class="label">Response</div>
                 <pre>[
-  { "name": "Macs", "count": 542 },
-  { "name": "iPads", "count": 87 },
+  { "name": "iMacs", "count": 54 },
+  { "name": "MacBookPros", "count": 87 },
+  { "name": "Phones", "count": 46 },
   ...
 ]</pre>
             </div>
@@ -230,14 +231,14 @@
                     </div>
                 </div>
                 <div class="label">Example</div>
-                <pre>curl http://localhost:8080/api/categories/Macs</pre>
+                <pre>curl http://localhost:8080/api/categories/MacBookPros</pre>
                 <div class="label">Response</div>
                 <pre>[
   {
     "uuid": "F3A1B2C4-...",
     "modelName": "MacBook Pro (16-inch, M4 Max, Nov 2024)",
     "introduction": "November 8, 2024",
-    "supportStatus": "Current",
+    "supportStatus": "Supported",
     "sortDate": 20241108
   },
   ...
@@ -417,13 +418,13 @@ curl "http://localhost:8080/api/lookup?q=Mac16,8"</pre>
 
                 <div class="label">Examples</div>
                 <pre><span class="comment"># Find all currently supported products</span>
-curl "http://localhost:8080/api/filter?field=SupportStatus&amp;op=eq&amp;value=Current"
+curl "http://localhost:8080/api/filter?field=SupportStatus&amp;op=eq&amp;value=Supported"
 
 <span class="comment"># Find products with M4 processors</span>
 curl "http://localhost:8080/api/filter?field=Processor&amp;op=contains&amp;value=M4"
 
 <span class="comment"># Filter within specific categories</span>
-curl "http://localhost:8080/api/filter?field=SupportStatus&amp;op=eq&amp;value=Current&amp;categories=Macs,iPads"</pre>
+curl "http://localhost:8080/api/filter?field=SupportStatus&amp;op=eq&amp;value=Supported&amp;categories=MacBookPros,iMacs"</pre>
             </div>
 
             <h2>Multi-Category</h2>
@@ -447,7 +448,7 @@ curl "http://localhost:8080/api/filter?field=SupportStatus&amp;op=eq&amp;value=C
                     </div>
                 </div>
                 <div class="label">Example</div>
-                <pre>curl "http://localhost:8080/api/multicategory?names=Macs,iPads"</pre>
+                <pre>curl "http://localhost:8080/api/multicategory?names=iPads,iPadPros,iPadAirs"</pre>
             </div>
 
             <h2>Status &amp; Configuration</h2>
@@ -492,7 +493,7 @@ curl "http://localhost:8080/api/filter?field=SupportStatus&amp;op=eq&amp;value=C
             <div class="note">
                 You can also dump the entire database as JSON for local
                 processing with <code>jq</code> or other tools:
-                <pre style="margin-top: 8px; margin-bottom: 0">./pommeraie -json | jq '.Macs | length'</pre>
+                <pre style="margin-top: 8px; margin-bottom: 0">./pommeraie -json | jq '.iMacs | length'</pre>
             </div>
 
             <a href="/" class="back-link">Return to the homepage</a>
